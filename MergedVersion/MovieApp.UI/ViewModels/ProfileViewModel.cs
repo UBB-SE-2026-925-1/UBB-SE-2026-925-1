@@ -1,0 +1,76 @@
+namespace MovieApp.UI.ViewModels;
+
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Windows.Input;
+using MovieApp.Core.Interfaces.Service;
+using MovieApp.Core.Models;
+using CommunityToolkit.Mvvm.Input;
+
+/// <summary>
+/// ViewModel for the user profile view showing points and all badges (locked + unlocked).
+/// </summary>
+public class ProfileViewModel : ViewModelBase
+{
+    private readonly IPointService pointService;
+    private readonly IBadgeService badgeService;
+    private readonly int currentUserId;
+
+    private int totalPoints;
+    private int weeklyScore;
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="ProfileViewModel"/>.
+    /// </summary>
+    public ProfileViewModel(IPointService pointService, IBadgeService badgeService, int currentUserId = 1)
+    {
+        this.pointService = pointService;
+        this.badgeService = badgeService;
+        this.currentUserId = currentUserId;
+
+        AllBadges = new ObservableCollection<BadgeDisplayItem>();
+        LoadProfileCommand = new AsyncRelayCommand(LoadProfileAsync);
+    }
+
+    /// <summary>Gets or sets the user's total points.</summary>
+    public int TotalPoints
+    {
+        get => totalPoints;
+        set => SetProperty(ref totalPoints, value);
+    }
+
+    /// <summary>Gets or sets the user's weekly score.</summary>
+    public int WeeklyScore
+    {
+        get => weeklyScore;
+        set => SetProperty(ref weeklyScore, value);
+    }
+
+    /// <summary>Gets all badges (locked and unlocked) for display.</summary>
+    public ObservableCollection<BadgeDisplayItem> AllBadges { get; }
+
+    /// <summary>Gets the command to load profile data.</summary>
+    public ICommand LoadProfileCommand { get; }
+
+    /// <summary>
+    /// Loads the user's points and badge states.
+    /// </summary>
+    public async Task LoadProfileAsync()
+    {
+        await badgeService.CheckAndAwardBadgesAsync(currentUserId);
+
+        var stats = await pointService.GetUserStatsAsync(currentUserId);
+        TotalPoints = stats.TotalPoints;
+        WeeklyScore = stats.WeeklyScore;
+
+        var allBadges = await badgeService.GetAllBadgesAsync();
+        var userBadges = await badgeService.GetUserBadgesAsync(currentUserId);
+        var earnedIds = new HashSet<int>(userBadges.Select(b => b.BadgeId));
+
+        AllBadges.Clear();
+        foreach (var badge in allBadges)
+        {
+            AllBadges.Add(new BadgeDisplayItem(badge, isUnlocked: earnedIds.Contains(badge.BadgeId)));
+        }
+    }
+}

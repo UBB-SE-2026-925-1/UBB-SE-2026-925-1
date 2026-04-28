@@ -1,0 +1,455 @@
+namespace MovieApp.UI.ViewModels;
+
+using System.Collections.ObjectModel;
+using System.Windows.Input;
+using MovieApp.Core.Interfaces.Service;
+using MovieApp.Core.Repositories;
+using MovieApp.Core.Models;
+using MovieApp.Core.Services;
+using CommunityToolkit.Mvvm.Input;
+using System.Linq;
+
+/// <summary>
+/// ViewModel for the movie detail view showing reviews, ratings, screenings, and external critic data.
+/// </summary>
+public class MovieDetailViewModel : ViewModelBase
+{
+    private readonly IReviewService reviewService;
+    private readonly ICommentService commentService;
+    private readonly IScreeningRepository screeningRepository;
+    private readonly ExternalReviewService externalReviewService;
+    private readonly int currentUserId;
+
+    private Movie? movie;
+    private double averageRating;
+    private float newReviewRating;
+    private string newReviewContent = string.Empty;
+    private string newCommentContent = string.Empty;
+    private bool hasUserReview;
+    private bool showExtraReviewForm;
+    private string statusMessage = string.Empty;
+    private bool isLoadingExternalReviews;
+    private double criticScore;
+    private double audienceScore;
+    private bool isPolarized;
+    private int replyToCommentId;
+    private string replyContent = string.Empty;
+
+    // Extra review fields
+    private int cinRating;
+    private string cinText = string.Empty;
+    private int actingRating;
+    private string actingText = string.Empty;
+    private int cgiRating;
+    private string cgiText = string.Empty;
+    private int plotRating;
+    private string plotText = string.Empty;
+    private int soundRating;
+    private string soundText = string.Empty;
+    private string mainExtraText = string.Empty;
+
+    /// <summary>
+    /// Event raised when navigating back to catalog.
+    /// </summary>
+    public event Action? NavigateBack;
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="MovieDetailViewModel"/>.
+    /// </summary>
+    public MovieDetailViewModel(
+        IReviewService reviewService,
+        ICommentService commentService,
+        IScreeningRepository screeningRepository,
+        ExternalReviewService externalReviewService,
+        int currentUserId = 1)
+    {
+        this.reviewService = reviewService;
+        this.commentService = commentService;
+        this.screeningRepository = screeningRepository;
+        this.externalReviewService = externalReviewService;
+        this.currentUserId = currentUserId;
+
+        SubmitReviewCommand = new AsyncRelayCommand(SubmitReviewAsync);
+        SubmitExtraReviewCommand = new AsyncRelayCommand(SubmitExtraReviewAsync);
+        ShowExtraReviewFormCommand = new RelayCommand(() => ShowExtraReviewForm = true);
+        AddCommentCommand = new AsyncRelayCommand(AddCommentAsync);
+        SubmitReplyCommand = new AsyncRelayCommand(SubmitReplyAsync);
+        StartReplyCommand = new RelayCommand<object>(param =>
+        {
+            if (param is int commentId)
+            {
+                this.ReplyToCommentId = commentId;
+            }
+        });
+        CancelReplyCommand = new RelayCommand(() =>
+        {
+            ReplyContent = string.Empty;
+            ReplyToCommentId = 0;
+        });
+        BackCommand = new RelayCommand(() => NavigateBack?.Invoke());
+        DeleteReviewCommand = new AsyncRelayCommand<int>(DeleteReviewAsync);
+    }
+
+    /// <summary>Gets the collection of reviews for this movie.</summary>
+    public ObservableCollection<Review> Reviews { get; } = new ();
+
+    /// <summary>Gets the collection of comments for this movie.</summary>
+    public ObservableCollection<Comment> Comments { get; } = new ();
+
+    /// <summary>Gets the collection of root-level comments for this movie.</summary>
+    public ObservableCollection<Comment> RootComments { get; } = new ();
+
+    /// <summary>Gets the collection of screenings for this movie.</summary>
+    public ObservableCollection<Screening> Screenings { get; } = new ();
+
+    /// <summary>Gets the collection of external critic reviews.</summary>
+    public ObservableCollection<CriticReview> ExternalReviews { get; } = new ();
+
+    /// <summary>Gets the lexicon analysis results.</summary>
+    public ObservableCollection<string> LexiconWords { get; } = new ();
+
+    /// <summary>Gets or sets the current movie.</summary>
+    public Movie? Movie
+    {
+        get => movie;
+        set => SetProperty(ref movie, value);
+    }
+
+    /// <summary>Gets or sets the average rating.</summary>
+    public double AverageRating
+    {
+        get => averageRating;
+        set => SetProperty(ref averageRating, value);
+    }
+
+    /// <summary>Gets or sets the new review star rating.</summary>
+    public float NewReviewRating
+    {
+        get => newReviewRating;
+        set => SetProperty(ref newReviewRating, value);
+    }
+
+    /// <summary>Gets or sets the new review content.</summary>
+    public string NewReviewContent
+    {
+        get => newReviewContent;
+        set => SetProperty(ref newReviewContent, value);
+    }
+
+    /// <summary>Gets or sets the new comment content.</summary>
+    public string NewCommentContent
+    {
+        get => newCommentContent;
+        set => SetProperty(ref newCommentContent, value);
+    }
+
+    /// <summary>Gets or sets whether the current user has reviewed this movie.</summary>
+    public bool HasUserReview
+    {
+        get => hasUserReview;
+        set => SetProperty(ref hasUserReview, value);
+    }
+
+    /// <summary>Gets or sets whether the extra review form is visible.</summary>
+    public bool ShowExtraReviewForm
+    {
+        get => showExtraReviewForm;
+        set => SetProperty(ref showExtraReviewForm, value);
+    }
+
+    /// <summary>Gets or sets a status message.</summary>
+    public string StatusMessage
+    {
+        get => statusMessage;
+        set => SetProperty(ref statusMessage, value);
+    }
+
+    /// <summary>Gets or sets whether external reviews are loading.</summary>
+    public bool IsLoadingExternalReviews
+    {
+        get => isLoadingExternalReviews;
+        set => SetProperty(ref isLoadingExternalReviews, value);
+    }
+
+    /// <summary>Gets or sets the critic score.</summary>
+    public double CriticScore
+    {
+        get => criticScore;
+        set => SetProperty(ref criticScore, value);
+    }
+
+    /// <summary>Gets or sets the audience score.</summary>
+    public double AudienceScore
+    {
+        get => audienceScore;
+        set => SetProperty(ref audienceScore, value);
+    }
+
+    /// <summary>Gets or sets whether scores are polarized.</summary>
+    public bool IsPolarized
+    {
+        get => isPolarized;
+        set => SetProperty(ref isPolarized, value);
+    }
+
+    /// <summary>Gets or sets the comment ID being replied to.</summary>
+    public int ReplyToCommentId
+    {
+        get => replyToCommentId;
+        set => SetProperty(ref replyToCommentId, value);
+    }
+
+    /// <summary>Gets or sets the reply content.</summary>
+    public string ReplyContent
+    {
+        get => replyContent;
+        set => SetProperty(ref replyContent, value);
+    }
+
+    // Extra review properties
+    public int CinRating { get => cinRating; set => SetProperty(ref cinRating, value); }
+    public string CinText { get => cinText; set => SetProperty(ref cinText, value); }
+    public int ActingRating { get => actingRating; set => SetProperty(ref actingRating, value); }
+    public string ActingText { get => actingText; set => SetProperty(ref actingText, value); }
+    public int CgiRating { get => cgiRating; set => SetProperty(ref cgiRating, value); }
+    public string CgiText { get => cgiText; set => SetProperty(ref cgiText, value); }
+    public int PlotRating { get => plotRating; set => SetProperty(ref plotRating, value); }
+    public string PlotText { get => plotText; set => SetProperty(ref plotText, value); }
+    public int SoundRating { get => soundRating; set => SetProperty(ref soundRating, value); }
+    public string SoundText { get => soundText; set => SetProperty(ref soundText, value); }
+    public string MainExtraText { get => mainExtraText; set => SetProperty(ref mainExtraText, value); }
+
+    public ICommand SubmitReviewCommand { get; }
+    public ICommand SubmitExtraReviewCommand { get; }
+    public ICommand ShowExtraReviewFormCommand { get; }
+    public ICommand AddCommentCommand { get; }
+    public ICommand SubmitReplyCommand { get; }
+    public ICommand StartReplyCommand { get; }
+    public ICommand CancelReplyCommand { get; }
+    public ICommand BackCommand { get; }
+    public ICommand DeleteReviewCommand { get; }
+
+    /// <summary>
+    /// Loads movie details, reviews, comments, screenings, and external reviews.
+    /// </summary>
+    public async Task LoadMovieAsync(Movie movie)
+    {
+        Movie = movie;
+        StatusMessage = string.Empty;
+        ShowExtraReviewForm = false;
+
+        // Load reviews
+        var reviews = await reviewService.GetReviewsForMovieAsync(movie.Id);
+        Reviews.Clear();
+        foreach (var review in reviews)
+        {
+            Reviews.Add(review);
+        }
+
+        AverageRating = await reviewService.GetAverageRatingAsync(movie.Id);
+        HasUserReview = reviews.Any(r => r.UserDisplayId == currentUserId);
+
+        // Load comments
+        var comments = await commentService.GetCommentsForMovieAsync(movie.Id);
+        RebuildCommentTree(comments);
+
+        // Load Screenings (Repo A feature)
+        var screenings = await screeningRepository.GetByMovieIdAsync(movie.Id);
+        Screenings.Clear();
+        foreach (var s in screenings)
+        {
+            Screenings.Add(s);
+        }
+
+        // Load external reviews asynchronously
+        _ = LoadExternalReviewsAsync(movie.Title, movie.ReleaseYear);
+    }
+
+    private async Task LoadExternalReviewsAsync(string movieTitle, int releaseYear)
+    {
+        IsLoadingExternalReviews = true;
+        try
+        {
+            var reviews = await externalReviewService.GetExternalReviewsAsync(movieTitle, releaseYear);
+            ExternalReviews.Clear();
+            foreach (var review in reviews)
+            {
+                ExternalReviews.Add(review);
+            }
+
+            var (criticScore, audienceScore) = await GetLocalAggregateScoresAsync(movieTitle);
+            CriticScore = criticScore;
+            AudienceScore = audienceScore;
+            IsPolarized = Math.Abs(criticScore - audienceScore) > 0.3;
+
+            var lexicon = externalReviewService.AnalyseLexicon(reviews);
+            LexiconWords.Clear();
+            foreach (var (word, count) in lexicon)
+            {
+                LexiconWords.Add($"{word} ({count})");
+            }
+        }
+        catch
+        {
+            ExternalReviews.Clear();
+            LexiconWords.Clear();
+        }
+        finally
+        {
+            IsLoadingExternalReviews = false;
+        }
+    }
+
+    private async Task SubmitReviewAsync()
+    {
+        if (Movie == null) return;
+
+        try
+        {
+            await reviewService.AddReviewAsync(currentUserId, Movie.Id, NewReviewRating, NewReviewContent);
+            StatusMessage = "Review submitted successfully!";
+            NewReviewContent = string.Empty;
+            NewReviewRating = 0;
+            await LoadMovieAsync(Movie);
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    private async Task SubmitExtraReviewAsync()
+    {
+        if (Movie == null) return;
+
+        var userReview = Reviews.FirstOrDefault(r => r.UserDisplayId == currentUserId);
+        if (userReview == null)
+        {
+            StatusMessage = "You must submit a regular review first.";
+            return;
+        }
+
+        try
+        {
+            await reviewService.SubmitExtraReviewAsync(userReview.ReviewId,
+                CgiRating, CgiText, ActingRating, ActingText,
+                PlotRating, PlotText, SoundRating, SoundText,
+                CinRating, CinText, MainExtraText);
+            StatusMessage = "Extra review submitted successfully!";
+            ShowExtraReviewForm = false;
+            await LoadMovieAsync(Movie);
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    private async Task AddCommentAsync()
+    {
+        if (Movie == null || string.IsNullOrWhiteSpace(NewCommentContent)) return;
+
+        try
+        {
+            await commentService.AddCommentAsync(currentUserId, Movie.Id, NewCommentContent);
+            NewCommentContent = string.Empty;
+            await LoadCommentsAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    private async Task LoadCommentsAsync()
+    {
+        if (Movie == null) return;
+        var comments = await commentService.GetCommentsForMovieAsync(Movie.Id);
+        RebuildCommentTree(comments);
+    }
+
+    private async Task SubmitReplyAsync()
+    {
+        if (Movie == null || ReplyToCommentId <= 0 || string.IsNullOrWhiteSpace(ReplyContent)) return;
+
+        try
+        {
+            await commentService.AddReplyAsync(currentUserId, ReplyToCommentId, ReplyContent);
+            ReplyContent = string.Empty;
+            ReplyToCommentId = 0;
+            await LoadCommentsAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    private void RebuildCommentTree(IEnumerable<Comment> comments)
+    {
+        Comments.Clear();
+        RootComments.Clear();
+
+        var commentList = comments.Select(CloneComment).ToList();
+        var commentsById = new Dictionary<int, Comment>();
+
+        foreach (var comment in commentList)
+        {
+            comment.Replies.Clear();
+            Comments.Add(comment);
+            commentsById[comment.MessageId] = comment;
+        }
+
+        foreach (var comment in commentList)
+        {
+            if (comment.ParentCommentId.HasValue &&
+                commentsById.TryGetValue(comment.ParentCommentId.Value, out var parentComment))
+            {
+                parentComment.Replies.Add(comment);
+            }
+            else
+            {
+                RootComments.Add(comment);
+            }
+        }
+    }
+
+    private static Comment CloneComment(Comment comment)
+    {
+        return new Comment
+        {
+            MessageId = comment.MessageId,
+            Content = comment.Content,
+            CreatedAt = comment.CreatedAt,
+            Author = comment.Author,
+            Movie = comment.Movie,
+            ParentCommentId = comment.ParentCommentId,
+            Replies = new List<Comment>()
+        };
+    }
+
+    private async Task DeleteReviewAsync(int reviewId)
+    {
+        if (Movie == null) return;
+
+        try
+        {
+            await reviewService.DeleteReviewAsync(reviewId);
+            StatusMessage = "Review deleted.";
+            await LoadMovieAsync(Movie);
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    private async Task<(double CriticScore, double AudienceScore)> GetLocalAggregateScoresAsync(string movieTitle)
+    {
+        await Task.Delay(100);
+        var hash = Math.Abs(movieTitle.GetHashCode());
+        double criticScore = 1.5 + ((hash % 35) / 10.0);
+        double audienceScore = 1.0 + ((hash % 40) / 10.0);
+        return (Math.Min(5.0, Math.Round(criticScore, 1)), Math.Min(5.0, Math.Round(audienceScore, 1)));
+    }
+}

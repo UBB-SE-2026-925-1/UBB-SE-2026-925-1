@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "MovieApp.UI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "MovieApp.UI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
