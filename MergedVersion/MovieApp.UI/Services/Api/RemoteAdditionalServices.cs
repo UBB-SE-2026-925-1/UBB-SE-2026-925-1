@@ -106,10 +106,14 @@ public class RemoteSlotMachineService : ISlotMachineService
     public async Task<IReadOnlyList<Director>> GetDirectorsAsync(CancellationToken ct = default) => 
         (await this.apiClient.GetAsync<IEnumerable<Director>>("api/slotmachine/reels/directors", ct))?.ToList().AsReadOnly() ?? new List<Director>().AsReadOnly();
 
-    public Task<int> GetAvailableSpinsAsync(int userIdentifier) => throw new NotImplementedException();
-    public Task<bool> GrantBonusSpinForEventParticipationAsync(int userIdentifier) => throw new NotImplementedException();
-    public Task<bool> RecordLoginAndCheckStreakAsync(int userIdentifier) => throw new NotImplementedException();
-    public Task<bool> GrantStreakSpinAsync(int userIdentifier) => throw new NotImplementedException();
+    public async Task<int> GetAvailableSpinsAsync(int userIdentifier) => 
+        await this.apiClient.GetAsync<int>($"api/slotmachine/available/{userIdentifier}");
+    public async Task<bool> GrantBonusSpinForEventParticipationAsync(int userIdentifier) => 
+        await this.apiClient.PostAsync<object, bool>($"api/slotmachine/bonus/{userIdentifier}", new { });
+    public async Task<bool> RecordLoginAndCheckStreakAsync(int userIdentifier) => 
+        await this.apiClient.PostAsync<object, bool>($"api/slotmachine/login-streak/{userIdentifier}", new { });
+    public async Task<bool> GrantStreakSpinAsync(int userIdentifier) => 
+        await this.apiClient.PostAsync<object, bool>($"api/slotmachine/streak-spin/{userIdentifier}", new { });
     public Task<Genre> GetRandomGenreAsync(CancellationToken ct = default) => throw new NotImplementedException();
     public Task<Actor> GetRandomActorAsync(CancellationToken ct = default) => throw new NotImplementedException();
     public Task<Director> GetRandomDirectorAsync(CancellationToken ct = default) => throw new NotImplementedException();

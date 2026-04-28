@@ -14,12 +14,19 @@ using MovieApp.Core.Repositories;
 public sealed class MyEventsViewModel : EventListPageViewModel
 {
     private readonly IPriceWatcherRepository priceWatcherRepository;
+    private readonly IEventRepository? eventRepository;
+    private readonly IUserEventAttendanceRepository? attendanceRepository;
     private WatchedEvent? selectedWatchedEvent;
     private double selectedTargetPrice;
 
-    public MyEventsViewModel(IPriceWatcherRepository priceWatcherRepository)
+    public MyEventsViewModel(
+        IPriceWatcherRepository priceWatcherRepository,
+        IEventRepository? eventRepository,
+        IUserEventAttendanceRepository? attendanceRepository)
     {
         this.priceWatcherRepository = priceWatcherRepository;
+        this.eventRepository = eventRepository;
+        this.attendanceRepository = attendanceRepository;
     }
 
     /// <inheritdoc/>
@@ -93,9 +100,19 @@ public sealed class MyEventsViewModel : EventListPageViewModel
     }
 
     /// <inheritdoc/>
-    protected override Task<IReadOnlyList<Event>> LoadEventsAsync()
+    protected override async Task<IReadOnlyList<Event>> LoadEventsAsync()
     {
-        return Task.FromResult<IReadOnlyList<Event>>([]);
+        if (this.eventRepository is null || this.attendanceRepository is null)
+        {
+            return new List<Event>();
+        }
+
+        int userId = App.CurrentUserId;
+        var joinedIds = await this.attendanceRepository.GetJoinedEventIdsAsync(userId);
+        var allEvents = await this.eventRepository.GetAllAsync();
+
+        var myEvents = allEvents.Where(e => joinedIds.Contains(e.Id) || e.CreatorUserId == userId).ToList();
+        return myEvents;
     }
 
     private string GetWatchlistFolderPath() => string.Empty; // No longer needed

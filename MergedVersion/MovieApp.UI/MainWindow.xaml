@@ -16,31 +16,31 @@
             SelectionChanged="AppNavigationView_SelectionChanged">
             
             <controls:NavigationView.MenuItems>
-                <controls:NavigationViewItem Content="🎬 Catalog" Tag="Catalog" Icon="AllApps"/>
-                <controls:NavigationViewItem Content="⚔️ Battle Arena" Tag="Battle">
+                <controls:NavigationViewItem Content="Catalog" Tag="Catalog" Icon="AllApps"/>
+                <controls:NavigationViewItem Content="Battle Arena" Tag="Battle">
                     <controls:NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE1AD;" />
                     </controls:NavigationViewItem.Icon>
                 </controls:NavigationViewItem>
-                <controls:NavigationViewItem Content="💬 Forum" Tag="Forum" Icon="Message"/>
-                <controls:NavigationViewItem Content="👤 Profile" Tag="Profile" Icon="Contact"/>
+                <controls:NavigationViewItem Content="Forum" Tag="Forum" Icon="Message"/>
+                <controls:NavigationViewItem Content="Profile" Tag="Profile" Icon="Contact"/>
                 
                 <controls:NavigationViewItemSeparator/>
                 <controls:NavigationViewItemHeader Content="Legacy Features (Team A)"/>
-                <controls:NavigationViewItem Content="🏠 Home" Tag="Home" Icon="Home"/>
-                <controls:NavigationViewItem Content="⭐ Favorites" Tag="Favorites" Icon="Favorite"/>
-                <controls:NavigationViewItem Content="📅 My Events" Tag="MyEvents" Icon="Calendar"/>
-                <controls:NavigationViewItem Content="🎰 Slots" Tag="SlotMachine" Icon="Shop"/>
-                <controls:NavigationViewItem Content="🎡 Trivia Wheel" Tag="TriviaWheel" Icon="Help"/>
+                <controls:NavigationViewItem Content="Home" Tag="Home" Icon="Home"/>
+                <controls:NavigationViewItem Content="Favorites" Tag="Favorites" Icon="Favorite"/>
+                <controls:NavigationViewItem Content="My Events" Tag="MyEvents" Icon="Calendar"/>
+                <controls:NavigationViewItem Content="Slots" Tag="SlotMachine" Icon="Shop"/>
+                <controls:NavigationViewItem Content="Trivia Wheel" Tag="TriviaWheel" Icon="Help"/>
             </controls:NavigationView.MenuItems>
 
             <controls:NavigationView.FooterMenuItems>
-                <controls:NavigationViewItem Content="🔔 Notifications" Tag="Notifications">
+                <controls:NavigationViewItem Content="Notifications" Tag="Notifications">
                     <controls:NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE1CE;" />
                     </controls:NavigationViewItem.Icon>
                 </controls:NavigationViewItem>
-                <controls:NavigationViewItem Content="🎁 Rewards" Tag="Rewards">
+                <controls:NavigationViewItem Content="Rewards" Tag="Rewards">
                     <controls:NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE8A1;" />
                     </controls:NavigationViewItem.Icon>

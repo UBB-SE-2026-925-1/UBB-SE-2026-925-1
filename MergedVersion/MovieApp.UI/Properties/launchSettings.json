@@ -4,7 +4,8 @@
       "commandName": "MsixPackage"
     },
     "MovieApp.UI (Unpackaged)": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "sqlDebugging": false
     }
   }
 }

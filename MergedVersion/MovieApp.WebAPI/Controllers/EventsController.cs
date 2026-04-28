@@ -70,6 +70,16 @@ public class EventsController : ControllerBase
         return Ok(favorites);
     }
 
+    [HttpGet("favorites/details/{userId}")]
+    public async Task<ActionResult<IEnumerable<Event>>> GetFavoriteDetails(int userId)
+    {
+        var favorites = await this.favoriteEventRepository.FindByUserAsync(userId);
+        var allEvents = await this.eventRepository.GetAllAsync();
+        var favoriteEventIds = favorites.Select(f => f.EventId).ToHashSet();
+        var details = allEvents.Where(e => favoriteEventIds.Contains(e.Id));
+        return Ok(details);
+    }
+
     [HttpPost("favorites/toggle")]
     public async Task<IActionResult> ToggleFavorite([FromBody] FavoriteToggleRequest request)
     {
@@ -97,6 +107,27 @@ public class EventsController : ControllerBase
     {
         var id = await this.eventRepository.AddAsync(eventDetails);
         return Ok(id);
+    }
+
+    [HttpPost("update")]
+    public async Task<IActionResult> UpdateEvent([FromBody] Event eventDetails)
+    {
+        await this.eventRepository.UpdateEventAsync(eventDetails);
+        return Ok();
+    }
+
+    [HttpPost("{eventId}/enrollment")]
+    public async Task<IActionResult> UpdateEnrollment(int eventId, [FromQuery] int count)
+    {
+        await this.eventRepository.UpdateEnrollmentAsync(eventId, count);
+        return Ok();
+    }
+
+    [HttpDelete("{eventId}")]
+    public async Task<IActionResult> DeleteEvent(int eventId)
+    {
+        await this.eventRepository.DeleteAsync(eventId);
+        return Ok();
     }
 
     public class FavoriteToggleRequest { public int UserId { get; set; } public int EventId { get; set; } }

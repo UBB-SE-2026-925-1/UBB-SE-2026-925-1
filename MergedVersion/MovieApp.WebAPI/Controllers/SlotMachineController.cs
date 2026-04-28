@@ -56,4 +56,32 @@ public class SlotMachineController : ControllerBase
         var directors = await this.slotMachineService.GetDirectorsAsync();
         return Ok(directors);
     }
+
+    [HttpPost("bonus/{userId}")]
+    public async Task<ActionResult<bool>> GrantBonusSpin(int userId)
+    {
+        var result = await this.slotMachineService.GrantBonusSpinForEventParticipationAsync(userId);
+        return Ok(result);
+    }
+
+    [HttpPost("login-streak/{userId}")]
+    public async Task<ActionResult<bool>> RecordLogin(int userId)
+    {
+        var result = await this.slotMachineService.RecordLoginAndCheckStreakAsync(userId);
+        return Ok(result);
+    }
+
+    [HttpPost("streak-spin/{userId}")]
+    public async Task<ActionResult<bool>> GrantStreakSpin(int userId)
+    {
+        var result = await this.slotMachineService.GrantStreakSpinAsync(userId);
+        return Ok(result);
+    }
+
+    [HttpGet("available/{userId}")]
+    public async Task<ActionResult<int>> GetAvailableSpins(int userId)
+    {
+        var result = await this.slotMachineService.GetAvailableSpinsAsync(userId);
+        return Ok(result);
+    }
 }

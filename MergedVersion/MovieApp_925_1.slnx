@@ -1,5 +1,6 @@
 <Solution>
   <Configurations>
+    <Platform Name="Any CPU" />
     <Platform Name="ARM64" />
     <Platform Name="x64" />
     <Platform Name="x86" />
@@ -10,8 +11,12 @@
     <File Path="README.md" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="MovieApp.Core/MovieApp.Core.csproj" />
-    <Project Path="MovieApp.Infrastructure/MovieApp.Infrastructure.csproj" />
+    <Project Path="MovieApp.Core/MovieApp.Core.csproj">
+      <Build Solution="*|Any CPU" Project="false" />
+    </Project>
+    <Project Path="MovieApp.Infrastructure/MovieApp.Infrastructure.csproj">
+      <Build Solution="*|Any CPU" Project="false" />
+    </Project>
     <Project Path="MovieApp.UI/MovieApp.UI.csproj">
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />

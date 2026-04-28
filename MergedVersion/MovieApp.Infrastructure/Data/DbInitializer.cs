@@ -102,37 +102,65 @@ public static class DbInitializer
         await context.SaveChangesAsync();
 
         // 5. Seed Badges (Team B)
-        var badges = new List<Badge>
+        if (!await context.Badges.AnyAsync())
         {
-            new() { Name = "The Snob", CriteriaValue = 10 },
-            new() { Name = "Why so serious?", CriteriaValue = 50 },
-            new() { Name = "The Joker", CriteriaValue = 70 },
-            new() { Name = "The Godfather I", CriteriaValue = 100 },
-            new() { Name = "The Godfather II", CriteriaValue = 200 },
-            new() { Name = "The Godfather III", CriteriaValue = 300 }
-        };
-        context.Badges.AddRange(badges);
+            var badges = new List<Badge>
+            {
+                new() { Name = "The Snob", CriteriaValue = 10 },
+                new() { Name = "Why so serious?", CriteriaValue = 50 },
+                new() { Name = "The Joker", CriteriaValue = 70 },
+                new() { Name = "The Godfather I", CriteriaValue = 100 },
+                new() { Name = "The Godfather II", CriteriaValue = 200 },
+                new() { Name = "The Godfather III", CriteriaValue = 300 }
+            };
+            context.Badges.AddRange(badges);
+        }
 
         // 6. Seed Trivia (Team A Sample)
-        var trivia = new List<TriviaQuestion>
+        if (!await context.TriviaQuestions.AnyAsync())
         {
-            new() { QuestionText = "Which actor played Iron Man in the Marvel Cinematic Universe?", Category = "Actors", OptionA = "Chris Evans", OptionB = "Robert Downey Jr.", OptionC = "Mark Ruffalo", OptionD = "Chris Hemsworth", CorrectOption = 'B' },
-            new() { QuestionText = "Who directed Inception (2010)?", Category = "Directors", OptionA = "Steven Spielberg", OptionB = "Christopher Nolan", OptionC = "James Cameron", OptionD = "Ridley Scott", CorrectOption = 'B' },
-            new() { QuestionText = "Which film contains the quote: \"Here is looking at you, kid\"?", Category = "Movie Quotes", OptionA = "Gone with the Wind", OptionB = "Casablanca", OptionC = "Sunset Boulevard", OptionD = "Rebecca", CorrectOption = 'B' }
-        };
-        context.TriviaQuestions.AddRange(trivia);
+            var trivia = new List<TriviaQuestion>
+            {
+                new() { QuestionText = "Which actor played Iron Man in the Marvel Cinematic Universe?", Category = "Actors", OptionA = "Chris Evans", OptionB = "Robert Downey Jr.", OptionC = "Mark Ruffalo", OptionD = "Chris Hemsworth", CorrectOption = 'B' },
+                new() { QuestionText = "Who directed Inception (2010)?", Category = "Directors", OptionA = "Steven Spielberg", OptionB = "Christopher Nolan", OptionC = "James Cameron", OptionD = "Ridley Scott", CorrectOption = 'B' },
+                new() { QuestionText = "Which film contains the quote: \"Here is looking at you, kid\"?", Category = "Movie Quotes", OptionA = "Gone with the Wind", OptionB = "Casablanca", OptionC = "Sunset Boulevard", OptionD = "Rebecca", CorrectOption = 'B' }
+            };
+            context.TriviaQuestions.AddRange(trivia);
+        }
 
         // 7. Seed Users
-        var adminUser = new User { Username = "Admin", AuthProvider = "Seed", AuthSubject = "Admin" };
-        var dummyUser = new User { Username = "Dummy User", AuthProvider = "dummy", AuthSubject = "default-user" };
-        context.Users.AddRange(adminUser, dummyUser);
+        User? adminUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "Admin");
+        User? dummyUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "Dummy User");
+        
+        bool usersAdded = false;
+        if (adminUser == null)
+        {
+            adminUser = new User { Username = "Admin", AuthProvider = "Seed", AuthSubject = "Admin" };
+            context.Users.Add(adminUser);
+            usersAdded = true;
+        }
+        if (dummyUser == null)
+        {
+            dummyUser = new User { Username = "Dummy User", AuthProvider = "dummy", AuthSubject = "default-user" };
+            context.Users.Add(dummyUser);
+            usersAdded = true;
+        }
 
-        await context.SaveChangesAsync();
+        if (usersAdded || context.ChangeTracker.HasChanges())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // 8. Seed UserStats
-        context.UserStats.Add(new UserStats { User = adminUser, TotalPoints = 1000, WeeklyScore = 500 });
-        context.UserStats.Add(new UserStats { User = dummyUser, TotalPoints = 50, WeeklyScore = 10 });
+        if (!await context.UserStats.AnyAsync())
+        {
+            if (adminUser != null && !await context.UserStats.AnyAsync(us => us.User != null && us.User.Id == adminUser.Id))
+                context.UserStats.Add(new UserStats { User = adminUser, TotalPoints = 1000, WeeklyScore = 500 });
+            
+            if (dummyUser != null && !await context.UserStats.AnyAsync(us => us.User != null && us.User.Id == dummyUser.Id))
+                context.UserStats.Add(new UserStats { User = dummyUser, TotalPoints = 50, WeeklyScore = 10 });
 
-        await context.SaveChangesAsync();
+            await context.SaveChangesAsync();
+        }
     }
 }

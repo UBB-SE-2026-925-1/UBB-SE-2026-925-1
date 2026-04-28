@@ -51,7 +51,14 @@
                         </Grid.ColumnDefinitions>
 
                         <Border Style="{StaticResource SurfaceCardStyle}">
-                            <ListView Height="420" />
+                            <ListView Height="420"
+                                      ItemsSource="{x:Bind ViewModel.VisibleEvents, Mode=OneWay}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:Event">
+                                        <TextBlock Text="{x:Bind Title}" Padding="8" />
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
                         </Border>
 
                         <Border
@@ -78,7 +85,14 @@
                         </Grid.ColumnDefinitions>
 
                         <Border Style="{StaticResource SurfaceCardStyle}">
-                            <ListView Height="420" />
+                            <ListView Height="420"
+                                      ItemsSource="{x:Bind ViewModel.VisibleEvents, Mode=OneWay}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:Event">
+                                        <TextBlock Text="{x:Bind Title}" Padding="8" />
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
                         </Border>
 
                         <Border
@@ -110,7 +124,14 @@
                         </Grid.ColumnDefinitions>
 
                         <Border Style="{StaticResource SurfaceCardStyle}">
-                            <ListView Height="420" />
+                            <ListView Height="420"
+                                      ItemsSource="{x:Bind ViewModel.VisibleEvents, Mode=OneWay}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:Event">
+                                        <TextBlock Text="{x:Bind Title}" Padding="8" />
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
                         </Border>
 
                         <Border

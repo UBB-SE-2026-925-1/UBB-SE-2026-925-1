@@ -27,10 +27,16 @@ public class RemoteEventRepository : IEventRepository
 
     // Write operations (if needed by UI)
     public Task<int> AddAsync(Event eventDetails, CancellationToken ct = default) => this.apiClient.PostAsync<Event, int>("api/events", eventDetails, ct);
-    public Task<bool> UpdateAsync(Event eventDetails, CancellationToken ct = default) => throw new NotImplementedException();
-    public Task<bool> UpdateEnrollmentAsync(int eventId, int newEnrollmentCount, CancellationToken ct = default) => throw new NotImplementedException();
-    public Task UpdateEventAsync(Event updatedEvent, CancellationToken ct = default) => throw new NotImplementedException();
-    public Task<bool> DeleteAsync(int eventId, CancellationToken ct = default) => throw new NotImplementedException();
+    public Task<bool> UpdateAsync(Event eventDetails, CancellationToken ct = default) => throw new NotImplementedException(); // Replaced by UpdateEventAsync below
+    public async Task<bool> UpdateEnrollmentAsync(int eventId, int newEnrollmentCount, CancellationToken ct = default) => 
+        await this.apiClient.PostAsync<object, bool>($"api/events/{eventId}/enrollment?count={newEnrollmentCount}", new { }, ct);
+    public Task UpdateEventAsync(Event updatedEvent, CancellationToken ct = default) => 
+        this.apiClient.PostAsync<Event>("api/events/update", updatedEvent, ct);
+    public async Task<bool> DeleteAsync(int eventId, CancellationToken ct = default)
+    {
+        await this.apiClient.DeleteAsync($"api/events/{eventId}", ct);
+        return true;
+    }
 }
 
 public class RemoteFavoriteEventService : IFavoriteEventService

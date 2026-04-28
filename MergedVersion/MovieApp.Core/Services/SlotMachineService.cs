@@ -52,8 +52,7 @@ public sealed class SlotMachineService : ISlotMachineService
     /// <inheritdoc/>
     public async Task<SlotMachineResult> SpinAsync(int userIdentifier)
     {
-        UserSpinData? state = await this.stateRepository.GetByUserIdAsync(userIdentifier)
-            ?? throw new InvalidOperationException("User state not found");
+        UserSpinData? state = await this.GetOrCreateUserStateAsync(userIdentifier);
 
         DateTime currentUtcDate = DateTime.UtcNow.Date;
         if (state.LastSlotSpinReset.Date < currentUtcDate)
@@ -129,8 +128,7 @@ public sealed class SlotMachineService : ISlotMachineService
     /// <inheritdoc/>
     public async Task<int> GetAvailableSpinsAsync(int userIdentifier)
     {
-        UserSpinData state = await this.stateRepository.GetByUserIdAsync(userIdentifier)
-            ?? throw new InvalidOperationException("User state not found");
+        UserSpinData state = await this.GetOrCreateUserStateAsync(userIdentifier);
 
         DateTime currentUtcDate = DateTime.UtcNow.Date;
         if (state.LastSlotSpinReset.Date < currentUtcDate)
@@ -145,8 +143,7 @@ public sealed class SlotMachineService : ISlotMachineService
     /// <inheritdoc/>
     public async Task<UserSpinData> GetUserSpinStateAsync(int userIdentifier)
     {
-        UserSpinData state = await this.stateRepository.GetByUserIdAsync(userIdentifier)
-            ?? throw new InvalidOperationException("User state not found");
+        UserSpinData state = await this.GetOrCreateUserStateAsync(userIdentifier);
 
         DateTime currentUtcDate = DateTime.UtcNow.Date;
         if (state.LastSlotSpinReset.Date < currentUtcDate)
@@ -161,8 +158,7 @@ public sealed class SlotMachineService : ISlotMachineService
     /// <inheritdoc/>
     public async Task<bool> GrantBonusSpinForEventParticipationAsync(int userIdentifier)
     {
-        UserSpinData state = await this.stateRepository.GetByUserIdAsync(userIdentifier)
-            ?? throw new InvalidOperationException("User state not found");
+        UserSpinData state = await this.GetOrCreateUserStateAsync(userIdentifier);
 
         if (state.EventSpinRewardsToday < MaximumEventSpinsPerDay)
         {
@@ -178,8 +174,7 @@ public sealed class SlotMachineService : ISlotMachineService
     /// <inheritdoc/>
     public async Task<bool> RecordLoginAndCheckStreakAsync(int userIdentifier)
     {
-        UserSpinData state = await this.stateRepository.GetByUserIdAsync(userIdentifier)
-            ?? throw new InvalidOperationException("User state not found");
+        UserSpinData state = await this.GetOrCreateUserStateAsync(userIdentifier);
 
         state.UpdateLoginStreak();
 
@@ -198,8 +193,7 @@ public sealed class SlotMachineService : ISlotMachineService
     /// <inheritdoc/>
     public async Task<bool> GrantStreakSpinAsync(int userIdentifier)
     {
-        UserSpinData state = await this.stateRepository.GetByUserIdAsync(userIdentifier)
-            ?? throw new InvalidOperationException("User state not found");
+        UserSpinData state = await this.GetOrCreateUserStateAsync(userIdentifier);
 
         if (state.LoginStreak >= RequiredLoginStreak)
         {
@@ -290,5 +284,25 @@ public sealed class SlotMachineService : ISlotMachineService
         };
 
         await this.discountRepository.AddAsync(jackpotReward);
+    }
+
+    private async Task<UserSpinData> GetOrCreateUserStateAsync(int userIdentifier)
+    {
+        UserSpinData? state = await this.stateRepository.GetByUserIdAsync(userIdentifier);
+        if (state == null)
+        {
+            state = new UserSpinData
+            {
+                UserId = userIdentifier,
+                DailySpinsRemaining = ResetSpinsCount,
+                LastSlotSpinReset = DateTime.UtcNow.Date,
+                BonusSpins = 0,
+                EventSpinRewardsToday = 0,
+                LoginStreak = 0,
+                LastLoginDate = DateTime.MinValue
+            };
+            await this.stateRepository.CreateAsync(state);
+        }
+        return state;
     }
 }

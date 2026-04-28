@@ -90,6 +90,11 @@ public sealed partial class MainWindow : Window
                 view = myEventsView;
                 break;
 
+            case "EventManagement":
+                var eventManagementView = new EventManagementPage();
+                view = eventManagementView;
+                break;
+
             case "SlotMachine":
                 var slotView = new SlotMachinePage();
                 slotView.DataContext = App.ServiceProvider.GetRequiredService<SlotMachineViewModel>();
