@@ -100,7 +100,10 @@ public sealed class MovieRepository : IMovieRepository
             .Include(m => m.Directors)
             .ToListAsync(ct);
         
-        movies = movies.DistinctBy(m => m.Id).ToList();
+        movies = movies
+            .GroupBy(m => m.Title)
+            .Select(g => g.OrderByDescending(m => !string.IsNullOrEmpty(m.PosterUrl)).First())
+            .ToList();
         
         foreach (var movie in movies)
         {

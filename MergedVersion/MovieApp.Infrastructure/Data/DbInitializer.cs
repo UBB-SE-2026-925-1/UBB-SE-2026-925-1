@@ -13,7 +13,7 @@ public static class DbInitializer
     {
         context.Database.EnsureCreated();
 
-        if (await context.Users.AnyAsync(u => u.AuthProvider == "Seed" && u.AuthSubject == "Admin") && await context.Movies.AnyAsync()) return; // Already seeded
+        // Smart seeding will handle duplicates/missing data below
 
         // 1. Seed Genres
         var genres = new List<Genre>
@@ -29,7 +29,11 @@ public static class DbInitializer
             new() { Name = "Adventure" },
             new() { Name = "Mystery" }
         };
-        context.Genres.AddRange(genres);
+        if (!await context.Genres.AnyAsync())
+        {
+            context.Genres.AddRange(genres);
+            await context.SaveChangesAsync();
+        }
 
         // 2. Seed Actors
         var actors = new List<Actor>
@@ -47,7 +51,11 @@ public static class DbInitializer
             new() { Name = "Johnny Depp" },
             new() { Name = "Meryl Streep" }
         };
-        context.Actors.AddRange(actors);
+        if (!await context.Actors.AnyAsync())
+        {
+            context.Actors.AddRange(actors);
+            await context.SaveChangesAsync();
+        }
 
         // 3. Seed Directors
         var directors = new List<Director>
@@ -64,7 +72,11 @@ public static class DbInitializer
             new() { Name = "Wes Anderson" },
             new() { Name = "Ari Aster" }
         };
-        context.Directors.AddRange(directors);
+        if (!await context.Directors.AnyAsync())
+        {
+            context.Directors.AddRange(directors);
+            await context.SaveChangesAsync();
+        }
 
         await context.SaveChangesAsync();
 
