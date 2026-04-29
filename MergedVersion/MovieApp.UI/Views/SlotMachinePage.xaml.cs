@@ -51,7 +51,8 @@ public sealed partial class SlotMachinePage : Page
         SlotMachineViewModel viewModel = new SlotMachineViewModel(
             currentUser.Id,
             App.Services.SlotMachineService ?? throw new System.InvalidOperationException("SlotMachineService not initialized"),
-            App.Services.SlotMachineAnimationService ?? throw new System.InvalidOperationException("SlotMachineAnimationService not initialized"));
+            App.Services.SlotMachineAnimationService ?? throw new System.InvalidOperationException("SlotMachineAnimationService not initialized"),
+            App.Services.UserMovieDiscountRepository);
 
         viewModel.JackpotHit += this.OnJackpotHit;
         this.DataContext = viewModel;

@@ -14,12 +14,101 @@ using MovieApp.Core.Repositories;
 public sealed class MyEventsViewModel : EventListPageViewModel
 {
     private readonly IPriceWatcherRepository priceWatcherRepository;
+    private readonly IEventRepository? eventRepository;
+    private readonly IUserEventAttendanceRepository? attendanceRepository;
     private WatchedEvent? selectedWatchedEvent;
     private double selectedTargetPrice;
 
-    public MyEventsViewModel(IPriceWatcherRepository priceWatcherRepository)
+    public MyEventsViewModel(
+        IPriceWatcherRepository priceWatcherRepository,
+        IEventRepository? eventRepository,
+        IUserEventAttendanceRepository? attendanceRepository)
     {
         this.priceWatcherRepository = priceWatcherRepository;
+        this.eventRepository = eventRepository;
+        this.attendanceRepository = attendanceRepository;
+
+        this.SaveCreatedEventCommand = new AsyncRelayCommand(this.SaveCreatedEventAsync, () => this.SelectedEvent is not null);
+        this.CancelParticipationCommand = new AsyncRelayCommand(this.CancelParticipationAsync, () => this.SelectedEvent is not null);
+        this.DeleteEventCommand = new AsyncRelayCommand(this.DeleteEventAsync, () => this.SelectedEvent is not null);
+    }
+
+    private Event? selectedEvent;
+    private string formTitle = string.Empty;
+    private string formLocation = string.Empty;
+    private double formPrice;
+    private int formCapacity;
+    private string formNotes = string.Empty;
+
+    public Event? SelectedEvent
+    {
+        get => this.selectedEvent;
+        set
+        {
+            if (this.SetProperty(ref this.selectedEvent, value))
+            {
+                if (value != null)
+                {
+                    this.FormTitle = value.Title;
+                    this.FormLocation = value.LocationReference;
+                    this.FormPrice = (double)value.TicketPrice;
+                    this.FormCapacity = value.MaxCapacity;
+                    // Notes would typically be user-specific, for now we just clear it or load from somewhere if available
+                }
+                ((AsyncRelayCommand)this.SaveCreatedEventCommand).NotifyCanExecuteChanged();
+                ((AsyncRelayCommand)this.CancelParticipationCommand).NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public string FormTitle { get => formTitle; set => SetProperty(ref formTitle, value); }
+    public string FormLocation { get => formLocation; set => SetProperty(ref formLocation, value); }
+    public double FormPrice { get => formPrice; set => SetProperty(ref formPrice, value); }
+    public int FormCapacity { get => formCapacity; set => SetProperty(ref formCapacity, value); }
+    public string FormNotes { get => formNotes; set => SetProperty(ref formNotes, value); }
+
+    public System.Windows.Input.ICommand SaveCreatedEventCommand { get; }
+    public System.Windows.Input.ICommand CancelParticipationCommand { get; }
+    public System.Windows.Input.ICommand DeleteEventCommand { get; }
+
+    private async Task SaveCreatedEventAsync()
+    {
+        if (this.SelectedEvent == null || this.eventRepository == null) return;
+        
+        Event updated = new()
+        {
+            Id = this.SelectedEvent.Id,
+            Title = this.FormTitle,
+            EventDateTime = this.SelectedEvent.EventDateTime,
+            CreatorUserId = this.SelectedEvent.CreatorUserId,
+            Description = this.SelectedEvent.Description,
+            PosterUrl = this.SelectedEvent.PosterUrl,
+            LocationReference = this.FormLocation,
+            TicketPrice = (decimal)this.FormPrice,
+            MaxCapacity = this.FormCapacity,
+            EventType = this.SelectedEvent.EventType,
+            CurrentEnrollment = this.SelectedEvent.CurrentEnrollment,
+            HistoricalRating = this.SelectedEvent.HistoricalRating
+        };
+
+        await this.eventRepository.UpdateEventAsync(updated);
+        await this.InitializeAsync();
+    }
+
+    private async Task CancelParticipationAsync()
+    {
+        if (this.SelectedEvent == null || this.attendanceRepository == null) return;
+        
+        await this.attendanceRepository.CancelAttendanceAsync(App.CurrentUserId, this.SelectedEvent.Id);
+        await this.InitializeAsync();
+    }
+
+    private async Task DeleteEventAsync()
+    {
+        if (this.SelectedEvent == null || this.eventRepository == null) return;
+        
+        await this.eventRepository.DeleteAsync(this.SelectedEvent.Id);
+        await this.InitializeAsync();
     }
 
     /// <inheritdoc/>
@@ -93,9 +182,19 @@ public sealed class MyEventsViewModel : EventListPageViewModel
     }
 
     /// <inheritdoc/>
-    protected override Task<IReadOnlyList<Event>> LoadEventsAsync()
+    protected override async Task<IReadOnlyList<Event>> LoadEventsAsync()
     {
-        return Task.FromResult<IReadOnlyList<Event>>([]);
+        if (this.eventRepository is null || this.attendanceRepository is null)
+        {
+            return new List<Event>();
+        }
+
+        int userId = App.CurrentUserId;
+        var joinedIds = await this.attendanceRepository.GetJoinedEventIdsAsync(userId);
+        var allEvents = await this.eventRepository.GetAllAsync();
+
+        var myEvents = allEvents.Where(e => joinedIds.Contains(e.Id) || e.CreatorUserId == userId).ToList();
+        return myEvents;
     }
 
     private string GetWatchlistFolderPath() => string.Empty; // No longer needed

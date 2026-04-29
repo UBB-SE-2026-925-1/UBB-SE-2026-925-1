@@ -17,7 +17,7 @@
             <StackPanel MaxWidth="800" HorizontalAlignment="Center">
 
                 <!-- Header -->
-                <TextBlock Text="⚔️ Battle Arena"
+                <TextBlock Text="Battle Arena"
                            FontSize="28" FontWeight="Bold" Margin="0,0,0,8"/>
                 <TextBlock FontSize="14" Margin="0,0,0,20"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}">
@@ -29,15 +29,15 @@
                 <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
                         CornerRadius="10" Padding="14,10" Margin="0,0,0,16">
                     <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
-                        <TextBlock Text="🛠 Demo:" VerticalAlignment="Center"
+                        <TextBlock Text="Demo:" VerticalAlignment="Center"
                                    FontWeight="SemiBold" FontSize="13"/>
 
-                        <Button Content="⚡ End Battle Now"
+                        <Button Content="End Battle Now"
                                 Command="{x:Bind ViewModel.ForceSettleCommand}"
                                 IsEnabled="{x:Bind ViewModel.IsBattleActive, Mode=OneWay}"
                                 ToolTipService.ToolTip="Immediately settle the active battle and distribute points"/>
 
-                        <Button Content="🔄 Reset Demo"
+                        <Button Content="Reset Demo"
                                 Command="{x:Bind ViewModel.ResetDemoCommand}"
                                 ToolTipService.ToolTip="Delete all battles, refund frozen points, and create a new active battle"/>
                     </StackPanel>
@@ -48,7 +48,7 @@
                         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         CornerRadius="12" Padding="40" HorizontalAlignment="Center">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="🏳️" FontSize="48" HorizontalAlignment="Center"/>
+                        <TextBlock Text=" " FontSize="48" HorizontalAlignment="Center"/>
                         <TextBlock Text="No active battle this week"
                                    FontSize="18" HorizontalAlignment="Center" Margin="0,12,0,0"/>
                         <TextBlock Text="Check back Monday for the next matchup! Or press Reset Demo above."

@@ -377,11 +377,7 @@ public sealed class TriviaWheelViewModel : ViewModelBase
         {
             this.IsSessionComplete = true;
             this.IsPlaying = false;
-
-            if (this.HasEarnedReward)
-            {
-                _ = this.GrantRewardAsync();
-            }
+            _ = this.HandleSessionCompleteAsync();
         }
         else
         {
@@ -442,6 +438,14 @@ public sealed class TriviaWheelViewModel : ViewModelBase
         this.IsTriviaAvailable = false;
         this.AvailabilityMessage = ErrorMessage;
         this.CanSpin = false;
+    }
+
+    private async Task HandleSessionCompleteAsync()
+    {
+        if (this.HasEarnedReward)
+        {
+            await this.GrantRewardAsync();
+        }
     }
 
     private async Task GrantRewardAsync()

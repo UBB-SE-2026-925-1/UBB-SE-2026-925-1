@@ -33,7 +33,35 @@ public class ApiClient
         {
             try
             {
-                return await this.httpClient.GetFromJsonAsync<T>(endpoint, this.jsonOptions, ct);
+                using var response = await this.httpClient.GetAsync(endpoint, ct);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync(ct);
+                    throw new Exception($"API Error ({response.StatusCode}) on {endpoint}: {errorContent}");
+                }
+
+                var contentString = await response.Content.ReadAsStringAsync(ct);
+                if (string.IsNullOrWhiteSpace(contentString))
+                {
+                    return default;
+                }
+
+                if (typeof(T) == typeof(string))
+                {
+                    if (contentString.StartsWith("\"") && contentString.EndsWith("\""))
+                    {
+                        return (T)(object)contentString.Trim('"');
+                    }
+                    return (T)(object)contentString;
+                }
+
+                return JsonSerializer.Deserialize<T>(contentString, this.jsonOptions);
+            }
+            catch (JsonException)
+            {
+                // If it's explicitly a JSON parsing error on a 200 OK, don't retry, just return default or throw.
+                // We return default assuming the endpoint had nothing to return.
+                return default;
             }
             catch (Exception) when (retryCount < maxRetries)
             {
@@ -46,19 +74,31 @@ public class ApiClient
     public async Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest request, CancellationToken ct = default)
     {
         var response = await this.httpClient.PostAsJsonAsync(endpoint, request, this.jsonOptions, ct);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(ct);
+            throw new Exception($"API Error ({response.StatusCode}) on {endpoint}: {errorContent}");
+        }
         return await response.Content.ReadFromJsonAsync<TResponse>(this.jsonOptions, ct);
     }
 
     public async Task PostAsync<TRequest>(string endpoint, TRequest request, CancellationToken ct = default)
     {
         var response = await this.httpClient.PostAsJsonAsync(endpoint, request, this.jsonOptions, ct);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(ct);
+            throw new Exception($"API Error ({response.StatusCode}) on {endpoint}: {errorContent}");
+        }
     }
 
     public async Task DeleteAsync(string endpoint, CancellationToken ct = default)
     {
         var response = await this.httpClient.DeleteAsync(endpoint, ct);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(ct);
+            throw new Exception($"API Error ({response.StatusCode}) on {endpoint}: {errorContent}");
+        }
     }
 }

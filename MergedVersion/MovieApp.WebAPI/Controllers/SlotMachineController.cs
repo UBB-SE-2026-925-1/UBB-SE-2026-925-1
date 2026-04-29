@@ -43,6 +43,13 @@ public class SlotMachineController : ControllerBase
         return Ok(genres);
     }
 
+    [HttpGet("reels/genres/random")]
+    public async Task<ActionResult<Genre>> GetRandomGenre()
+    {
+        var genre = await this.slotMachineService.GetRandomGenreAsync();
+        return Ok(genre);
+    }
+
     [HttpGet("reels/actors")]
     public async Task<ActionResult<IEnumerable<Actor>>> GetActors()
     {
@@ -50,10 +57,52 @@ public class SlotMachineController : ControllerBase
         return Ok(actors);
     }
 
+    [HttpGet("reels/actors/random")]
+    public async Task<ActionResult<Actor>> GetRandomActor()
+    {
+        var actor = await this.slotMachineService.GetRandomActorAsync();
+        return Ok(actor);
+    }
+
     [HttpGet("reels/directors")]
     public async Task<ActionResult<IEnumerable<Director>>> GetDirectors()
     {
         var directors = await this.slotMachineService.GetDirectorsAsync();
         return Ok(directors);
+    }
+
+    [HttpGet("reels/directors/random")]
+    public async Task<ActionResult<Director>> GetRandomDirector()
+    {
+        var director = await this.slotMachineService.GetRandomDirectorAsync();
+        return Ok(director);
+    }
+
+    [HttpPost("bonus/{userId}")]
+    public async Task<ActionResult<bool>> GrantBonusSpin(int userId)
+    {
+        var result = await this.slotMachineService.GrantBonusSpinForEventParticipationAsync(userId);
+        return Ok(result);
+    }
+
+    [HttpPost("login-streak/{userId}")]
+    public async Task<ActionResult<bool>> RecordLogin(int userId)
+    {
+        var result = await this.slotMachineService.RecordLoginAndCheckStreakAsync(userId);
+        return Ok(result);
+    }
+
+    [HttpPost("streak-spin/{userId}")]
+    public async Task<ActionResult<bool>> GrantStreakSpin(int userId)
+    {
+        var result = await this.slotMachineService.GrantStreakSpinAsync(userId);
+        return Ok(result);
+    }
+
+    [HttpGet("available/{userId}")]
+    public async Task<ActionResult<int>> GetAvailableSpins(int userId)
+    {
+        var result = await this.slotMachineService.GetAvailableSpinsAsync(userId);
+        return Ok(result);
     }
 }

@@ -51,18 +51,26 @@
                         </Grid.ColumnDefinitions>
 
                         <Border Style="{StaticResource SurfaceCardStyle}">
-                            <ListView Height="420" />
+                            <ListView Height="420"
+                                      ItemsSource="{x:Bind ViewModel.VisibleEvents, Mode=OneWay}"
+                                      SelectedItem="{x:Bind ViewModel.SelectedEvent, Mode=TwoWay}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:Event">
+                                        <TextBlock Text="{x:Bind Title}" Padding="8" />
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
                         </Border>
 
                         <Border
                             Grid.Column="1"
                             Style="{StaticResource SurfaceCardStyle}">
                             <StackPanel Spacing="10">
-                                <TextBox Header="Title" />
-                                <TextBox Header="Location" />
-                                <controls:NumberBox Header="Price" />
-                                <controls:NumberBox Header="Capacity" />
-                                <Button Content="Save" />
+                                <TextBox Header="Title" Text="{x:Bind ViewModel.FormTitle, Mode=TwoWay}" />
+                                <TextBox Header="Location" Text="{x:Bind ViewModel.FormLocation, Mode=TwoWay}" />
+                                <controls:NumberBox Header="Price" Value="{x:Bind ViewModel.FormPrice, Mode=TwoWay}" />
+                                <controls:NumberBox Header="Capacity" Value="{x:Bind ViewModel.FormCapacity, Mode=TwoWay}" />
+                                <Button Content="Save" Command="{x:Bind ViewModel.SaveCreatedEventCommand}" />
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -78,19 +86,28 @@
                         </Grid.ColumnDefinitions>
 
                         <Border Style="{StaticResource SurfaceCardStyle}">
-                            <ListView Height="420" />
+                            <ListView Height="420"
+                                      ItemsSource="{x:Bind ViewModel.VisibleEvents, Mode=OneWay}"
+                                      SelectedItem="{x:Bind ViewModel.SelectedEvent, Mode=TwoWay}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:Event">
+                                        <TextBlock Text="{x:Bind Title}" Padding="8" />
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
                         </Border>
 
                         <Border
                             Grid.Column="1"
                             Style="{StaticResource SurfaceCardStyle}">
                             <StackPanel Spacing="10">
-                                <TextBox Header="Selected event" />
+                                <TextBox Header="Selected event" Text="{x:Bind ViewModel.SelectedEvent.Title, Mode=OneWay}" IsReadOnly="True" />
                                 <TextBox
                                     AcceptsReturn="True"
                                     Header="Notes"
-                                    Height="180" />
-                                <Button Content="Cancel participation" />
+                                    Height="180"
+                                    Text="{x:Bind ViewModel.FormNotes, Mode=TwoWay}" />
+                                <Button Content="Cancel participation" Command="{x:Bind ViewModel.CancelParticipationCommand}" />
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -110,18 +127,26 @@
                         </Grid.ColumnDefinitions>
 
                         <Border Style="{StaticResource SurfaceCardStyle}">
-                            <ListView Height="420" />
+                            <ListView Height="420"
+                                      ItemsSource="{x:Bind ViewModel.VisibleEvents, Mode=OneWay}"
+                                      SelectedItem="{x:Bind ViewModel.SelectedEvent, Mode=TwoWay}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:Event">
+                                        <TextBlock Text="{x:Bind Title}" Padding="8" />
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
                         </Border>
 
                         <Border
                             Grid.Column="1"
                             Style="{StaticResource SurfaceCardStyle}">
                             <StackPanel Spacing="10">
-                                <TextBox Header="Title" />
-                                <TextBox Header="Location" />
-                                <TextBox Header="Type" />
-                                <Button Content="Edit" />
-                                <Button Content="Delete" />
+                                <TextBox Header="Title" Text="{x:Bind ViewModel.FormTitle, Mode=TwoWay}" />
+                                <TextBox Header="Location" Text="{x:Bind ViewModel.FormLocation, Mode=TwoWay}" />
+                                <TextBox Header="Type" Text="{x:Bind ViewModel.SelectedEvent.EventType, Mode=OneWay}" IsReadOnly="True" />
+                                <Button Content="Edit" Command="{x:Bind ViewModel.SaveCreatedEventCommand}" />
+                                <Button Content="Delete" Command="{x:Bind ViewModel.DeleteEventCommand}" />
                             </StackPanel>
                         </Border>
                     </Grid>

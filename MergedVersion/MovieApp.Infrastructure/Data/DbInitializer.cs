@@ -101,38 +101,192 @@ public static class DbInitializer
         }
         await context.SaveChangesAsync();
 
-        // 5. Seed Badges (Team B)
-        var badges = new List<Badge>
+        // 4.5 Seed Events
+        if (!await context.Events.AnyAsync())
         {
-            new() { Name = "The Snob", CriteriaValue = 10 },
-            new() { Name = "Why so serious?", CriteriaValue = 50 },
-            new() { Name = "The Joker", CriteriaValue = 70 },
-            new() { Name = "The Godfather I", CriteriaValue = 100 },
-            new() { Name = "The Godfather II", CriteriaValue = 200 },
-            new() { Name = "The Godfather III", CriteriaValue = 300 }
-        };
-        context.Badges.AddRange(badges);
+            var movie = await context.Movies.FirstAsync();
+            var events = new List<Event>
+            {
+                new() 
+                { 
+                    Id = 0,
+                    Title = "The Shawshank Redemption Screening", 
+                    Description = "Special screening of the classic movie.", 
+                    EventDateTime = DateTime.Now.AddDays(7), 
+                    LocationReference = "Main Theater, Hall 1", 
+                    TicketPrice = 15.00m, 
+                    EventType = "Marathon",
+                    MaxCapacity = 100,
+                    CreatorUserId = 1 
+                },
+                new() 
+                { 
+                    Id = 0,
+                    Title = "Action Movie Night", 
+                    Description = "A night of action movies.", 
+                    EventDateTime = DateTime.Now.AddDays(14), 
+                    LocationReference = "Cinema City, Hall 5", 
+                    TicketPrice = 25.00m, 
+                    EventType = "Premiere",
+                    MaxCapacity = 200,
+                    CreatorUserId = 2
+                }
+            };
+            context.Events.AddRange(events);
+            await context.SaveChangesAsync();
+        }
+
+        // 5. Seed Badges (Team B)
+        if (!await context.Badges.AnyAsync())
+        {
+            var badges = new List<Badge>
+            {
+                new() { Name = "The Snob", CriteriaValue = 10 },
+                new() { Name = "Why so serious?", CriteriaValue = 50 },
+                new() { Name = "The Joker", CriteriaValue = 70 },
+                new() { Name = "The Godfather I", CriteriaValue = 100 },
+                new() { Name = "The Godfather II", CriteriaValue = 200 },
+                new() { Name = "The Godfather III", CriteriaValue = 300 }
+            };
+            context.Badges.AddRange(badges);
+        }
 
         // 6. Seed Trivia (Team A Sample)
-        var trivia = new List<TriviaQuestion>
+        var categoriesToSeed = new[] { "Actors", "Directors", "Movie Quotes", "Oscars and Awards", "General Movie Trivia" };
+        foreach (var category in categoriesToSeed)
         {
-            new() { QuestionText = "Which actor played Iron Man in the Marvel Cinematic Universe?", Category = "Actors", OptionA = "Chris Evans", OptionB = "Robert Downey Jr.", OptionC = "Mark Ruffalo", OptionD = "Chris Hemsworth", CorrectOption = 'B' },
-            new() { QuestionText = "Who directed Inception (2010)?", Category = "Directors", OptionA = "Steven Spielberg", OptionB = "Christopher Nolan", OptionC = "James Cameron", OptionD = "Ridley Scott", CorrectOption = 'B' },
-            new() { QuestionText = "Which film contains the quote: \"Here is looking at you, kid\"?", Category = "Movie Quotes", OptionA = "Gone with the Wind", OptionB = "Casablanca", OptionC = "Sunset Boulevard", OptionD = "Rebecca", CorrectOption = 'B' }
-        };
-        context.TriviaQuestions.AddRange(trivia);
+            if (await context.TriviaQuestions.CountAsync(q => q.Category == category) < 25)
+            {
+                var trivia = new List<TriviaQuestion>();
+                for (int i = 1; i <= 30; i++)
+                {
+                    trivia.Add(new TriviaQuestion 
+                    { 
+                        QuestionText = $"{category} Question {i}: Sample trivia question?", 
+                        Category = category, 
+                        OptionA = "Option A", OptionB = "Option B", OptionC = "Option C", OptionD = "Option D", 
+                        CorrectOption = 'A' 
+                    });
+                }
+                context.TriviaQuestions.AddRange(trivia);
+            }
+        }
+        await context.SaveChangesAsync();
 
         // 7. Seed Users
-        var adminUser = new User { Username = "Admin", AuthProvider = "Seed", AuthSubject = "Admin" };
-        var dummyUser = new User { Username = "Dummy User", AuthProvider = "dummy", AuthSubject = "default-user" };
-        context.Users.AddRange(adminUser, dummyUser);
+        User? adminUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "Admin");
+        User? dummyUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "Dummy User");
+        
+        bool usersAdded = false;
+        if (adminUser == null)
+        {
+            adminUser = new User { Username = "Admin", AuthProvider = "Seed", AuthSubject = "Admin" };
+            context.Users.Add(adminUser);
+            usersAdded = true;
+        }
+        if (dummyUser == null)
+        {
+            dummyUser = new User { Username = "Dummy User", AuthProvider = "dummy", AuthSubject = "default-user" };
+            context.Users.Add(dummyUser);
+            usersAdded = true;
+        }
 
-        await context.SaveChangesAsync();
+        if (usersAdded || context.ChangeTracker.HasChanges())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // 8. Seed UserStats
-        context.UserStats.Add(new UserStats { User = adminUser, TotalPoints = 1000, WeeklyScore = 500 });
-        context.UserStats.Add(new UserStats { User = dummyUser, TotalPoints = 50, WeeklyScore = 10 });
+        if (!await context.UserStats.AnyAsync())
+        {
+            if (adminUser != null && !await context.UserStats.AnyAsync(us => us.User != null && us.User.Id == adminUser.Id))
+                context.UserStats.Add(new UserStats { User = adminUser, TotalPoints = 1000, WeeklyScore = 500 });
+            
+            if (dummyUser != null && !await context.UserStats.AnyAsync(us => us.User != null && us.User.Id == dummyUser.Id))
+                context.UserStats.Add(new UserStats { User = dummyUser, TotalPoints = 50, WeeklyScore = 10 });
 
-        await context.SaveChangesAsync();
+            await context.SaveChangesAsync();
+        }
+
+        // 9. Seed Favorites
+        var allEventsForFavs = await context.Events.ToListAsync();
+        if (allEventsForFavs.Any())
+        {
+            if (adminUser != null && !await context.FavoriteEvents.AnyAsync(f => f.UserId == adminUser.Id))
+            {
+                context.FavoriteEvents.Add(new FavoriteEvent { UserId = adminUser.Id, EventId = allEventsForFavs[0].Id });
+                if (allEventsForFavs.Count > 1)
+                    context.FavoriteEvents.Add(new FavoriteEvent { UserId = adminUser.Id, EventId = allEventsForFavs[1].Id });
+            }
+            if (dummyUser != null && !await context.FavoriteEvents.AnyAsync(f => f.UserId == dummyUser.Id))
+            {
+                context.FavoriteEvents.Add(new FavoriteEvent { UserId = dummyUser.Id, EventId = allEventsForFavs[0].Id });
+            }
+            await context.SaveChangesAsync();
+        }
+
+        // 10. Seed Watchlist (WatchedEvents)
+        if (allEventsForFavs.Any())
+        {
+            if (!await context.WatchedEvents.AnyAsync(w => w.EventId == allEventsForFavs[0].Id))
+            {
+                context.WatchedEvents.Add(new WatchedEvent { EventId = allEventsForFavs[0].Id, EventTitle = allEventsForFavs[0].Title, TargetPrice = 10.00m });
+            }
+            if (allEventsForFavs.Count > 1 && !await context.WatchedEvents.AnyAsync(w => w.EventId == allEventsForFavs[1].Id))
+            {
+                context.WatchedEvents.Add(new WatchedEvent { EventId = allEventsForFavs[1].Id, EventTitle = allEventsForFavs[1].Title, TargetPrice = 12.00m });
+            }
+            await context.SaveChangesAsync();
+        }
+
+        // 11. Seed Notifications and Rewards
+        if (adminUser != null)
+        {
+            if (!await context.Notifications.AnyAsync(n => n.UserId == adminUser.Id))
+            {
+                context.Notifications.Add(new Notification
+                {
+                    UserId = adminUser.Id,
+                    EventId = allEventsForFavs.FirstOrDefault()?.Id ?? 0,
+                    Type = "System",
+                    Message = "Welcome to MovieApp! A new reward has been issued to your account.",
+                    State = NotificationState.Unread
+                });
+            }
+
+            if (!await context.Rewards.AnyAsync(r => r.OwnerUserId == adminUser.Id))
+            {
+                context.Rewards.Add(new Reward
+                {
+                    OwnerUserId = adminUser.Id,
+                    RewardType = "Discount",
+                    ApplicabilityScope = "All Events",
+                    DiscountValue = 15.0,
+                    RedemptionStatus = false
+                });
+                await context.SaveChangesAsync();
+
+                context.Rewards.Add(new Reward
+                {
+                    OwnerUserId = adminUser.Id,
+                    RewardType = "Discount",
+                    ApplicabilityScope = "Action Movies",
+                    DiscountValue = 25.0,
+                    RedemptionStatus = false
+                });
+                await context.SaveChangesAsync();
+            }
+
+            if (!await context.TriviaRewards.AnyAsync(t => t.UserId == adminUser.Id))
+            {
+                context.TriviaRewards.Add(new TriviaReward
+                {
+                    UserId = adminUser.Id,
+                    IsRedeemed = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+                await context.SaveChangesAsync();
+            }
+        }
     }
 }

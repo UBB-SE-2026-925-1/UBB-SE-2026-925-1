@@ -32,6 +32,18 @@ public sealed class UserEventAttendanceRepository : IUserEventAttendanceReposito
         this.context.Set<UserEventAttendance>().Add(attendance);
         await this.context.SaveChangesAsync(ct);
     }
+
+    public async Task CancelAttendanceAsync(int userIdentifier, int eventIdentifier, CancellationToken ct = default)
+    {
+        var attendance = await this.context.Set<UserEventAttendance>()
+            .FirstOrDefaultAsync(a => a.UserId == userIdentifier && a.EventId == eventIdentifier, ct);
+        
+        if (attendance != null)
+        {
+            this.context.Set<UserEventAttendance>().Remove(attendance);
+            await this.context.SaveChangesAsync(ct);
+        }
+    }
 }
 
 

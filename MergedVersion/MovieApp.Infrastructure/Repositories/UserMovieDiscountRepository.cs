@@ -29,7 +29,7 @@ public sealed class UserMovieDiscountRepository : IUserMovieDiscountRepository
     public async Task<List<Reward>> GetDiscountsForUserAsync(int userIdentifier, CancellationToken ct = default)
     {
         return await this.context.Rewards
-            .Where(r => r.RewardId == userIdentifier && !r.IsAvailable)
+            .Where(r => r.OwnerUserId == userIdentifier)
             .ToListAsync(ct);
     }
 

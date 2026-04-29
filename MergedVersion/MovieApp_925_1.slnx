@@ -1,5 +1,6 @@
 <Solution>
   <Configurations>
+    <Platform Name="Any CPU" />
     <Platform Name="ARM64" />
     <Platform Name="x64" />
     <Platform Name="x86" />
@@ -16,12 +17,16 @@
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />
       <Platform Solution="*|x86" Project="x86" />
-      <Deploy />
+      <Deploy Solution="*|ARM64" />
+      <Deploy Solution="*|x86" />
+      <Deploy Solution="Release|x64" />
     </Project>
   </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/MovieApp.Core.Tests/" />
   <Folder Name="/tests/MovieApp.Infrastructure.Tests/" />
   <Folder Name="/tests/MovieApp.UI.Tests/" />
-  <Project Path="MovieApp.WebAPI/MovieApp.WebAPI.csproj" />
+  <Project Path="MovieApp.WebAPI/MovieApp.WebAPI.csproj">
+    <BuildDependency Project="MovieApp.UI/MovieApp.UI.csproj" />
+  </Project>
 </Solution>

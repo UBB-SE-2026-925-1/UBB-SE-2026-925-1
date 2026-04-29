@@ -15,6 +15,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using MovieApp.UI.Views;
+using MovieApp.Core.Repositories;
 
 /// <summary>
 /// ViewModel for the Slot Machine page.
@@ -42,8 +44,11 @@ public sealed class SlotMachineViewModel : ViewModelBase
     private bool hasMatchingEvents;
 
     private bool hasNoMatchingEvents = true;
+    private bool hasCoupons;
 
     private AsyncRelayCommand? spinCommand;
+
+    private readonly IUserMovieDiscountRepository userMovieDiscountRepository;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SlotMachineViewModel"/> class.
@@ -52,14 +57,17 @@ public sealed class SlotMachineViewModel : ViewModelBase
     /// <param name="userId">The identifier of the current user.</param>
     /// <param name="slotMachineService">The slot machine service.</param>
     /// <param name="animationService">The animation service used for reel animations.</param>
+    /// <param name="userMovieDiscountRepository">The repository used to load rewards.</param>
     public SlotMachineViewModel(
         int userId,
         ISlotMachineService slotMachineService,
-        ISlotMachineAnimationService animationService)
+        ISlotMachineAnimationService animationService,
+        IUserMovieDiscountRepository userMovieDiscountRepository)
     {
         this.userId = userId;
         this.slotMachineService = slotMachineService;
         this.animationService = animationService;
+        this.userMovieDiscountRepository = userMovieDiscountRepository;
 
         this.MatchingEvents.CollectionChanged += (_, _) =>
         {
@@ -199,6 +207,16 @@ public sealed class SlotMachineViewModel : ViewModelBase
     /// <summary>Gets the collection of events matching the current spin result.</summary>
     public ObservableCollection<MatchingEventItem> MatchingEvents { get; } = new ();
 
+    /// <summary>Gets the collection of active coupons/rewards for the user.</summary>
+    public ObservableCollection<SlotRewardItem> Coupons { get; } = new ();
+
+    /// <summary>Gets a value indicating whether the user has any active coupons.</summary>
+    public bool HasCoupons
+    {
+        get => this.hasCoupons;
+        private set => this.SetProperty(ref this.hasCoupons, value);
+    }
+
     /// <summary>Gets the movie associated with a jackpot result, if any.</summary>
     public Movie? JackpotMovie { get; private set; }
 
@@ -215,7 +233,7 @@ public sealed class SlotMachineViewModel : ViewModelBase
     /// <returns>A <see cref="SlotMachineViewModel"/> with no spins and the spin button disabled.</returns>
     public static SlotMachineViewModel CreateUnavailable(string statusMessage)
     {
-        SlotMachineViewModel viewModel = new SlotMachineViewModel(0, null!, null!);
+        SlotMachineViewModel viewModel = new SlotMachineViewModel(0, null!, null!, null!);
 
         viewModel.AvailableSpins = 0;
         viewModel.IsSpinButtonEnabled = false;
@@ -234,6 +252,7 @@ public sealed class SlotMachineViewModel : ViewModelBase
         try
         {
             await this.LoadUserStateAsync(cancellationToken);
+            await this.LoadCouponsAsync(cancellationToken);
             this.UpdateIsSpinButtonEnabled();
 
             this.StatusMessage = App.StreakSpinGrantedOnLogin
@@ -269,6 +288,30 @@ public sealed class SlotMachineViewModel : ViewModelBase
         this.SelectedGenre = await this.slotMachineService.GetRandomGenreAsync(cancellationToken);
         this.SelectedActor = await this.slotMachineService.GetRandomActorAsync(cancellationToken);
         this.SelectedDirector = await this.slotMachineService.GetRandomDirectorAsync(cancellationToken);
+    }
+
+    private async Task LoadCouponsAsync(CancellationToken ct = default)
+    {
+        if (this.userMovieDiscountRepository is null)
+        {
+            return;
+        }
+
+        IEnumerable<Reward> rewards = await this.userMovieDiscountRepository.GetDiscountsForUserAsync(this.userId);
+
+        this.Coupons.Clear();
+        foreach (var reward in rewards)
+        {
+            this.Coupons.Add(new SlotRewardItem
+            {
+                RewardId = reward.RewardId,
+                MovieTitle = reward.ApplicabilityScope,
+                DiscountText = $"{(int)reward.DiscountValue}% off",
+                IsRedeemed = reward.RedemptionStatus,
+            });
+        }
+        
+        this.HasCoupons = this.Coupons.Count > 0;
     }
 
     private bool CanSpin() => !this.IsSpinning && (this.AvailableSpins > 0 || this.BonusSpins > 0);

@@ -4,6 +4,8 @@
 namespace MovieApp.Core.Models;
 
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 /// <summary>
 /// Object to see properties of a watched event.
@@ -13,6 +15,8 @@ public sealed class WatchedEvent
     /// <summary>
     /// Gets or sets the event Id.
     /// </summary>
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public int EventId { get; set; }
 
     /// <summary>
