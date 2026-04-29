@@ -37,6 +37,7 @@ public sealed class MovieAppDbContext : DbContext
     public DbSet<Screening> Screenings => this.Set<Screening>();
     public DbSet<UserEventAttendance> UserEventAttendances => this.Set<UserEventAttendance>();
     public DbSet<FavoriteEvent> FavoriteEvents => this.Set<FavoriteEvent>();
+    public DbSet<WatchedEvent> WatchedEvents => this.Set<WatchedEvent>();
 
     // --- Gamification & Rewards Sets ---
     public DbSet<Battle> Battles => this.Set<Battle>();

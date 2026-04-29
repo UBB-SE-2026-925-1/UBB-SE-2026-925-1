@@ -224,5 +224,71 @@ public static class DbInitializer
             }
             await context.SaveChangesAsync();
         }
+
+        // 10. Seed Watchlist (WatchedEvents)
+        if (allEventsForFavs.Any())
+        {
+            if (!await context.WatchedEvents.AnyAsync(w => w.EventId == allEventsForFavs[0].Id))
+            {
+                context.WatchedEvents.Add(new WatchedEvent { EventId = allEventsForFavs[0].Id, EventTitle = allEventsForFavs[0].Title, TargetPrice = 10.00m });
+            }
+            if (allEventsForFavs.Count > 1 && !await context.WatchedEvents.AnyAsync(w => w.EventId == allEventsForFavs[1].Id))
+            {
+                context.WatchedEvents.Add(new WatchedEvent { EventId = allEventsForFavs[1].Id, EventTitle = allEventsForFavs[1].Title, TargetPrice = 12.00m });
+            }
+            await context.SaveChangesAsync();
+        }
+
+        // 11. Seed Notifications and Rewards
+        if (adminUser != null)
+        {
+            if (!await context.Notifications.AnyAsync(n => n.UserId == adminUser.Id))
+            {
+                context.Notifications.Add(new Notification
+                {
+                    UserId = adminUser.Id,
+                    EventId = allEventsForFavs.FirstOrDefault()?.Id ?? 0,
+                    Type = "System",
+                    Message = "Welcome to MovieApp! A new reward has been issued to your account.",
+                    State = NotificationState.Unread
+                });
+            }
+
+            if (!await context.Rewards.AnyAsync(r => r.OwnerUserId == adminUser.Id))
+            {
+                context.Rewards.Add(new Reward
+                {
+                    RewardId = 0,
+                    OwnerUserId = adminUser.Id,
+                    RewardType = "Discount",
+                    ApplicabilityScope = "All Events",
+                    DiscountValue = 15.0,
+                    RedemptionStatus = false
+                });
+
+                context.Rewards.Add(new Reward
+                {
+                    RewardId = 1,
+                    OwnerUserId = adminUser.Id,
+                    RewardType = "Discount",
+                    ApplicabilityScope = "Action Movies",
+                    DiscountValue = 25.0,
+                    RedemptionStatus = false
+                });
+            }
+
+            if (!await context.TriviaRewards.AnyAsync(t => t.UserId == adminUser.Id))
+            {
+                context.TriviaRewards.Add(new TriviaReward
+                {
+                    Id = 0,
+                    UserId = adminUser.Id,
+                    IsRedeemed = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            await context.SaveChangesAsync();
+        }
     }
 }

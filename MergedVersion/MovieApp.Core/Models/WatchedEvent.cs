@@ -13,6 +13,7 @@ public sealed class WatchedEvent
     /// <summary>
     /// Gets or sets the event Id.
     /// </summary>
+    [System.ComponentModel.DataAnnotations.Key]
     public int EventId { get; set; }
 
     /// <summary>

@@ -117,7 +117,8 @@ public partial class App : Application
             return new SlotMachineViewModel(
                 currentUserService.CurrentUser.Id,
                 provider.GetRequiredService<ISlotMachineService>(),
-                provider.GetRequiredService<ISlotMachineAnimationService>());
+                provider.GetRequiredService<ISlotMachineAnimationService>(),
+                provider.GetRequiredService<IUserMovieDiscountRepository>());
         });
         services.AddTransient<MyEventsViewModel>();
         services.AddTransient<TriviaWheelViewModel>(provider => 
@@ -146,6 +147,11 @@ public partial class App : Application
             await currentUserService.InitializeAsync();
             CurrentUserId = currentUserService.CurrentUser.Id;
             System.Diagnostics.Debug.WriteLine($">>> Step 1: User {currentUserService.CurrentUser.Username} (ID: {CurrentUserId}) loaded.");
+
+            System.Diagnostics.Debug.WriteLine(">>> Checking slot machine login streaks...");
+            var slotMachineService = ServiceProvider.GetRequiredService<ISlotMachineService>();
+            await slotMachineService.RecordLoginAndCheckStreakAsync(CurrentUserId);
+            StreakSpinGrantedOnLogin = await slotMachineService.GrantStreakSpinAsync(CurrentUserId);
 
             System.Diagnostics.Debug.WriteLine(">>> Step 2: Launching MainWindow...");
             _window = ServiceProvider.GetRequiredService<MainWindow>();

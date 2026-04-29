@@ -49,6 +49,7 @@ public sealed partial class HomePage : Page
         this.NavigationCacheMode = NavigationCacheMode.Required;
         this.InitializeComponent();
         this.DataContext = this.ViewModel;
+        this.Loaded += this.HomePage_Loaded;
     }
 
     /// <summary>
@@ -60,10 +61,14 @@ public sealed partial class HomePage : Page
     /// Called when the page is navigated to and initializes required data.
     /// </summary>
     /// <param name="e">The navigation event data.</param>
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        // Initialization moved to Loaded event since direct Content assignment bypasses this.
+    }
 
+    private async void HomePage_Loaded(object sender, RoutedEventArgs e)
+    {
         App.EnsureServicesValid();
 
         if (!this.initialized)

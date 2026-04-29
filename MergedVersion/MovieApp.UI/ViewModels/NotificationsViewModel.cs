@@ -106,7 +106,10 @@ public sealed partial class NotificationsViewModel : ObservableObject
     /// </summary>
     private void OpenEvent()
     {
-        // Navigation logic for event details would go here.
+        if (App.CurrentMainWindow is not null)
+        {
+            App.CurrentMainWindow.NavigateToRoute("MyEvents");
+        }
     }
 
     /// <summary>

@@ -33,11 +33,6 @@ public sealed partial class NotificationsPage : Page
 
     private async void NotificationsPage_Loaded(object sender, RoutedEventArgs e)
     {
-        if (this.initialized)
-        {
-            return;
-        }
-
         this.initialized = true;
         await this.ViewModel.InitializeAsync();
     }

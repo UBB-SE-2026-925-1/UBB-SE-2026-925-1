@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MovieApp.UI.Views;
+using MovieApp.Core.Repositories;
 
 /// <summary>
 /// ViewModel for the Slot Machine page.
@@ -47,6 +48,8 @@ public sealed class SlotMachineViewModel : ViewModelBase
 
     private AsyncRelayCommand? spinCommand;
 
+    private readonly IUserMovieDiscountRepository userMovieDiscountRepository;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="SlotMachineViewModel"/> class.
     /// Creates a database-backed slot-machine view model for the current user.
@@ -54,14 +57,17 @@ public sealed class SlotMachineViewModel : ViewModelBase
     /// <param name="userId">The identifier of the current user.</param>
     /// <param name="slotMachineService">The slot machine service.</param>
     /// <param name="animationService">The animation service used for reel animations.</param>
+    /// <param name="userMovieDiscountRepository">The repository used to load rewards.</param>
     public SlotMachineViewModel(
         int userId,
         ISlotMachineService slotMachineService,
-        ISlotMachineAnimationService animationService)
+        ISlotMachineAnimationService animationService,
+        IUserMovieDiscountRepository userMovieDiscountRepository)
     {
         this.userId = userId;
         this.slotMachineService = slotMachineService;
         this.animationService = animationService;
+        this.userMovieDiscountRepository = userMovieDiscountRepository;
 
         this.MatchingEvents.CollectionChanged += (_, _) =>
         {
@@ -227,7 +233,7 @@ public sealed class SlotMachineViewModel : ViewModelBase
     /// <returns>A <see cref="SlotMachineViewModel"/> with no spins and the spin button disabled.</returns>
     public static SlotMachineViewModel CreateUnavailable(string statusMessage)
     {
-        SlotMachineViewModel viewModel = new SlotMachineViewModel(0, null!, null!);
+        SlotMachineViewModel viewModel = new SlotMachineViewModel(0, null!, null!, null!);
 
         viewModel.AvailableSpins = 0;
         viewModel.IsSpinButtonEnabled = false;
@@ -286,12 +292,26 @@ public sealed class SlotMachineViewModel : ViewModelBase
 
     private async Task LoadCouponsAsync(CancellationToken ct = default)
     {
-        // We need the UserMovieDiscountRepository but it's not in ISlotMachineService.
-        // For simplicity, we'll assume the service can provide them or we add it to the constructor.
-        // Since we are in the UI and ISlotMachineService is what we have, 
-        // I'll check if ISlotMachineService has a way to get rewards.
-        // Looking at the interface... it doesn't.
-        // I'll update the constructor to take IUserMovieDiscountRepository.
+        if (this.userMovieDiscountRepository is null)
+        {
+            return;
+        }
+
+        IEnumerable<Reward> rewards = await this.userMovieDiscountRepository.GetDiscountsForUserAsync(this.userId);
+
+        this.Coupons.Clear();
+        foreach (var reward in rewards)
+        {
+            this.Coupons.Add(new SlotRewardItem
+            {
+                RewardId = reward.RewardId,
+                MovieTitle = reward.ApplicabilityScope,
+                DiscountText = $"{(int)reward.DiscountValue}% off",
+                IsRedeemed = reward.RedemptionStatus,
+            });
+        }
+        
+        this.HasCoupons = this.Coupons.Count > 0;
     }
 
     private bool CanSpin() => !this.IsSpinning && (this.AvailableSpins > 0 || this.BonusSpins > 0);
