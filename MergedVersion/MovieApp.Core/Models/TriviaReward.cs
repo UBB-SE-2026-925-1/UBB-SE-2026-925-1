@@ -12,7 +12,7 @@ public sealed class TriviaReward
     /// <summary>
     /// Gets the reward identifier.
     /// </summary>
-    required public int Id { get; init; }
+    public int Id { get; set; }
 
     /// <summary>
     /// Gets the user that owns the reward.

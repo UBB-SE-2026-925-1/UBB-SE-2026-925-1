@@ -11,7 +11,7 @@ public sealed class Reward
     /// <summary>
     /// Gets the unique identifier for the reward.
     /// </summary>
-    required public int RewardId { get; init; }
+    public int RewardId { get; set; }
 
     /// <summary>
     /// Gets the category or type of the reward.

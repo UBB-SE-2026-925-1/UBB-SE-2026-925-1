@@ -258,37 +258,35 @@ public static class DbInitializer
             {
                 context.Rewards.Add(new Reward
                 {
-                    RewardId = 0,
                     OwnerUserId = adminUser.Id,
                     RewardType = "Discount",
                     ApplicabilityScope = "All Events",
                     DiscountValue = 15.0,
                     RedemptionStatus = false
                 });
+                await context.SaveChangesAsync();
 
                 context.Rewards.Add(new Reward
                 {
-                    RewardId = 1,
                     OwnerUserId = adminUser.Id,
                     RewardType = "Discount",
                     ApplicabilityScope = "Action Movies",
                     DiscountValue = 25.0,
                     RedemptionStatus = false
                 });
+                await context.SaveChangesAsync();
             }
 
             if (!await context.TriviaRewards.AnyAsync(t => t.UserId == adminUser.Id))
             {
                 context.TriviaRewards.Add(new TriviaReward
                 {
-                    Id = 0,
                     UserId = adminUser.Id,
                     IsRedeemed = false,
                     CreatedAt = DateTime.UtcNow
                 });
+                await context.SaveChangesAsync();
             }
-
-            await context.SaveChangesAsync();
         }
     }
 }
