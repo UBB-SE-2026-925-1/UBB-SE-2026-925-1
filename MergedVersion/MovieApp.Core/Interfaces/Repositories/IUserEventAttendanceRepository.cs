@@ -29,4 +29,13 @@ public interface IUserEventAttendanceRepository
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task JoinAsync(int userIdentifier, int eventIdentifier, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Removes a user's attendance or registration for a specific event.
+    /// </summary>
+    /// <param name="userIdentifier">The unique identifier of the user.</param>
+    /// <param name="eventIdentifier">The unique identifier of the event.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task CancelAttendanceAsync(int userIdentifier, int eventIdentifier, CancellationToken cancellationToken = default);
 }

@@ -114,9 +114,12 @@ public class RemoteSlotMachineService : ISlotMachineService
         await this.apiClient.PostAsync<object, bool>($"api/slotmachine/login-streak/{userIdentifier}", new { });
     public async Task<bool> GrantStreakSpinAsync(int userIdentifier) => 
         await this.apiClient.PostAsync<object, bool>($"api/slotmachine/streak-spin/{userIdentifier}", new { });
-    public Task<Genre> GetRandomGenreAsync(CancellationToken ct = default) => throw new NotImplementedException();
-    public Task<Actor> GetRandomActorAsync(CancellationToken ct = default) => throw new NotImplementedException();
-    public Task<Director> GetRandomDirectorAsync(CancellationToken ct = default) => throw new NotImplementedException();
+    public async Task<Genre> GetRandomGenreAsync(CancellationToken ct = default) => 
+        await this.apiClient.GetAsync<Genre>("api/slotmachine/reels/genres/random", ct) ?? throw new Exception();
+    public async Task<Actor> GetRandomActorAsync(CancellationToken ct = default) => 
+        await this.apiClient.GetAsync<Actor>("api/slotmachine/reels/actors/random", ct) ?? throw new Exception();
+    public async Task<Director> GetRandomDirectorAsync(CancellationToken ct = default) => 
+        await this.apiClient.GetAsync<Director>("api/slotmachine/reels/directors/random", ct) ?? throw new Exception();
     public Task<IReadOnlyList<Event>> GetMatchingEventsAsync(int genreIdentifier, int actorIdentifier, int directorIdentifier) => throw new NotImplementedException();
     public Task<Movie?> FindJackpotMovieAsync(int genreIdentifier, int actorIdentifier, int directorIdentifier) => throw new NotImplementedException();
     public Task GrantJackpotDiscount(int userIdentifier, int movieIdentifier) => throw new NotImplementedException();

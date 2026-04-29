@@ -59,7 +59,7 @@
                             Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
                             <StackPanel Spacing="4">
                                 <TextBlock
-                                    Text="🎯 No reward available yet"
+                                    Text="No reward available yet"
                                     FontWeight="SemiBold" />
                                 <TextBlock
                                     Text="Spin the trivia wheel and answer all 20 questions correctly to earn a free ticket."
@@ -83,7 +83,7 @@
                                         Foreground="{ThemeResource SystemAccentColor}" />
                                     <StackPanel Spacing="2">
                                         <TextBlock
-                                            Text="🎉 Free Movie Ticket"
+                                            Text="Free Movie Ticket"
                                             FontWeight="Bold"
                                             FontSize="16" />
                                         <TextBlock
@@ -112,7 +112,7 @@
                             Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
                             <StackPanel Spacing="4">
                                 <TextBlock
-                                    Text="✅ Reward already redeemed"
+                                    Text="Reward already redeemed"
                                     FontWeight="SemiBold" />
                                 <TextBlock
                                     Text="You have already used your free ticket reward. Earn another by scoring 20/20 again!"
@@ -139,7 +139,7 @@
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Spacing="2">
                                                 <TextBlock FontWeight="Bold" Text="{Binding MovieTitle}" />
-                                                <TextBlock FontSize="12" Opacity="0.7" Text="🎰 Jackpot Discount" />
+                                                <TextBlock FontSize="12" Opacity="0.7" Text="Jackpot Discount" />
                                             </StackPanel>
                                             <Border Grid.Column="1" CornerRadius="4" Padding="8,4"
                                                     VerticalAlignment="Center"

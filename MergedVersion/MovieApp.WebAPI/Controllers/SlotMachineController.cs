@@ -43,6 +43,13 @@ public class SlotMachineController : ControllerBase
         return Ok(genres);
     }
 
+    [HttpGet("reels/genres/random")]
+    public async Task<ActionResult<Genre>> GetRandomGenre()
+    {
+        var genre = await this.slotMachineService.GetRandomGenreAsync();
+        return Ok(genre);
+    }
+
     [HttpGet("reels/actors")]
     public async Task<ActionResult<IEnumerable<Actor>>> GetActors()
     {
@@ -50,11 +57,25 @@ public class SlotMachineController : ControllerBase
         return Ok(actors);
     }
 
+    [HttpGet("reels/actors/random")]
+    public async Task<ActionResult<Actor>> GetRandomActor()
+    {
+        var actor = await this.slotMachineService.GetRandomActorAsync();
+        return Ok(actor);
+    }
+
     [HttpGet("reels/directors")]
     public async Task<ActionResult<IEnumerable<Director>>> GetDirectors()
     {
         var directors = await this.slotMachineService.GetDirectorsAsync();
         return Ok(directors);
+    }
+
+    [HttpGet("reels/directors/random")]
+    public async Task<ActionResult<Director>> GetRandomDirector()
+    {
+        var director = await this.slotMachineService.GetRandomDirectorAsync();
+        return Ok(director);
     }
 
     [HttpPost("bonus/{userId}")]

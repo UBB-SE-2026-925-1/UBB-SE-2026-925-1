@@ -86,4 +86,7 @@ public class RemoteUserEventAttendanceRepository : IUserEventAttendanceRepositor
 
     public Task JoinAsync(int userIdentifier, int eventIdentifier, CancellationToken ct = default) => 
         this.apiClient.PostAsync<object>($"api/events/user/{userIdentifier}/attendance/join?eventId={eventIdentifier}", new { }, ct);
+
+    public Task CancelAttendanceAsync(int userIdentifier, int eventIdentifier, CancellationToken ct = default) => 
+        this.apiClient.DeleteAsync($"api/events/user/{userIdentifier}/attendance?eventId={eventIdentifier}", ct);
 }

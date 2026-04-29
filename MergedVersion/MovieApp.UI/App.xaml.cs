@@ -144,7 +144,8 @@ public partial class App : Application
             System.Diagnostics.Debug.WriteLine(">>> Step 1: Initializing CurrentUser via API...");
             var currentUserService = ServiceProvider.GetRequiredService<ICurrentUserService>();
             await currentUserService.InitializeAsync();
-            System.Diagnostics.Debug.WriteLine($">>> Step 1: User {currentUserService.CurrentUser.Username} loaded.");
+            CurrentUserId = currentUserService.CurrentUser.Id;
+            System.Diagnostics.Debug.WriteLine($">>> Step 1: User {currentUserService.CurrentUser.Username} (ID: {CurrentUserId}) loaded.");
 
             System.Diagnostics.Debug.WriteLine(">>> Step 2: Launching MainWindow...");
             _window = ServiceProvider.GetRequiredService<MainWindow>();

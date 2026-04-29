@@ -14,7 +14,7 @@ public class RemoteTriviaRepository : ITriviaRepository
     public RemoteTriviaRepository(ApiClient apiClient) => this.apiClient = apiClient;
 
     public async Task<IEnumerable<TriviaQuestion>> GetByCategoryAsync(string categoryName, CancellationToken cancellationToken = default) => 
-        await this.apiClient.GetAsync<IEnumerable<TriviaQuestion>>($"api/trivia/category/{categoryName}", cancellationToken) ?? new List<TriviaQuestion>();
+        await this.apiClient.GetAsync<IEnumerable<TriviaQuestion>>($"api/trivia/category/{Uri.EscapeDataString(categoryName)}", cancellationToken) ?? new List<TriviaQuestion>();
 
     public async Task<IEnumerable<TriviaQuestion>> GetByMovieIdAsync(int movieIdentifier, int questionCount = 5, CancellationToken cancellationToken = default) => 
         await this.apiClient.GetAsync<IEnumerable<TriviaQuestion>>($"api/trivia/movie/{movieIdentifier}?count={questionCount}", cancellationToken) ?? new List<TriviaQuestion>();

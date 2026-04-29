@@ -59,7 +59,47 @@ public class EventsController : ControllerBase
     [HttpPost("user/{userId}/attendance/join")]
     public async Task<IActionResult> JoinEvent(int userId, [FromQuery] int eventId)
     {
+        var joinedIds = await this.attendanceRepository.GetJoinedEventIdsAsync(userId);
+        if (joinedIds.Contains(eventId))
+        {
+            return BadRequest("User already joined this event.");
+        }
+
+        var eventDetails = await this.eventRepository.FindByIdAsync(eventId);
+        if (eventDetails == null) return NotFound("Event not found.");
+
+        if (eventDetails.CurrentEnrollment >= eventDetails.MaxCapacity)
+        {
+            return BadRequest("Event is full.");
+        }
+
         await this.attendanceRepository.JoinAsync(userId, eventId);
+        
+        // Update enrollment count
+        eventDetails.CurrentEnrollment++;
+        await this.eventRepository.UpdateEventAsync(eventDetails);
+
+        return Ok();
+    }
+    
+    [HttpDelete("user/{userId}/attendance")]
+    public async Task<IActionResult> CancelAttendance(int userId, [FromQuery] int eventId)
+    {
+        var joinedIds = await this.attendanceRepository.GetJoinedEventIdsAsync(userId);
+        if (!joinedIds.Contains(eventId))
+        {
+            return BadRequest("User is not registered for this event.");
+        }
+
+        await this.attendanceRepository.CancelAttendanceAsync(userId, eventId);
+
+        var eventDetails = await this.eventRepository.FindByIdAsync(eventId);
+        if (eventDetails != null && eventDetails.CurrentEnrollment > 0)
+        {
+            eventDetails.CurrentEnrollment--;
+            await this.eventRepository.UpdateEventAsync(eventDetails);
+        }
+
         return Ok();
     }
 

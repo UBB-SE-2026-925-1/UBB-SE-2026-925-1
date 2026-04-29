@@ -81,10 +81,43 @@ public sealed class EventManagementViewModel : EventListPageViewModel
         get => this.selectedEvent;
         set
         {
-            this.SetProperty(ref this.selectedEvent, value);
-            ((AsyncRelayCommand)this.EditEventCommand).NotifyCanExecuteChanged();
-            ((AsyncRelayCommand)this.DeleteEventCommand).NotifyCanExecuteChanged();
+            if (this.SetProperty(ref this.selectedEvent, value))
+            {
+                if (value != null)
+                {
+                    this.FormTitle = value.Title;
+                    this.FormLocation = value.LocationReference;
+                    this.FormEventType = value.EventType;
+                    this.FormDescription = value.Description;
+                    this.FormDate = value.EventDateTime;
+                    this.FormTime = value.EventDateTime.TimeOfDay;
+                    this.FormPrice = (double)value.TicketPrice;
+                    this.FormCapacity = value.MaxCapacity;
+                    this.FormPosterUrl = value.PosterUrl;
+                }
+                else
+                {
+                    this.ClearFormFields();
+                }
+
+                ((AsyncRelayCommand)this.EditEventCommand).NotifyCanExecuteChanged();
+                ((AsyncRelayCommand)this.DeleteEventCommand).NotifyCanExecuteChanged();
+            }
         }
+    }
+
+    private void ClearFormFields()
+    {
+        this.FormTitle = string.Empty;
+        this.FormLocation = string.Empty;
+        this.FormEventType = string.Empty;
+        this.FormDescription = string.Empty;
+        this.FormDate = null;
+        this.FormTime = TimeSpan.Zero;
+        this.FormPrice = 0;
+        this.FormCapacity = 0;
+        this.FormPosterUrl = string.Empty;
+        this.ValidationMessage = string.Empty;
     }
 
     /// <summary>

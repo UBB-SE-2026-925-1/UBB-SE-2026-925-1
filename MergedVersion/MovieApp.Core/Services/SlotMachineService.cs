@@ -28,6 +28,7 @@ public sealed class SlotMachineService : ISlotMachineService
     private readonly IMovieRepository movieRepository;
     private readonly IEventRepository eventRepository;
     private readonly IUserMovieDiscountRepository discountRepository;
+    private readonly INotificationRepository notificationRepository;
     private readonly Random random = new Random();
 
     /// <summary>
@@ -37,16 +38,19 @@ public sealed class SlotMachineService : ISlotMachineService
     /// <param name="movieRepository">The movie metadata repository.</param>
     /// <param name="eventRepository">The event repository.</param>
     /// <param name="discountRepository">The discount reward repository.</param>
+    /// <param name="notificationRepository">The notification repository.</param>
     public SlotMachineService(
         IUserSlotMachineStateRepository stateRepository,
         IMovieRepository movieRepository,
         IEventRepository eventRepository,
-        IUserMovieDiscountRepository discountRepository)
+        IUserMovieDiscountRepository discountRepository,
+        INotificationRepository notificationRepository)
     {
         this.stateRepository = stateRepository;
         this.movieRepository = movieRepository;
         this.eventRepository = eventRepository;
         this.discountRepository = discountRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     /// <inheritdoc/>
@@ -272,18 +276,35 @@ public sealed class SlotMachineService : ISlotMachineService
     /// <inheritdoc/>
     public async Task GrantJackpotDiscount(int userIdentifier, int movieIdentifier)
     {
+        var movie = await this.movieRepository.GetByIdAsync(movieIdentifier);
+        string movieTitle = movie?.Title ?? "a movie";
+
         Reward jackpotReward = new Reward
         {
             RewardId = 0,
             RewardType = "MovieDiscount",
             RedemptionStatus = false,
-            ApplicabilityScope = $"Movie:{movieIdentifier}",
+            ApplicabilityScope = movieTitle,
             DiscountValue = DiscountPercentageDouble,
             OwnerUserId = userIdentifier,
             EventId = movieIdentifier,
         };
 
         await this.discountRepository.AddAsync(jackpotReward);
+
+        // Add Notification
+        Notification notification = new Notification
+        {
+            Id = 0,
+            UserId = userIdentifier,
+            EventId = 0,
+            Type = "Jackpot Win",
+            Message = $"Congratulations! You won a {DiscountPercentage}% discount for the movie '{movieTitle}' through the Slot Machine!",
+            CreatedAt = DateTime.UtcNow,
+            State = NotificationState.Unread
+        };
+
+        await this.notificationRepository.AddAsync(notification);
     }
 
     private async Task<UserSpinData> GetOrCreateUserStateAsync(int userIdentifier)

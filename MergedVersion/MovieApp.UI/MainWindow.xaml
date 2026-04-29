@@ -11,8 +11,8 @@
             x:Name="AppNavigationView"
             IsBackButtonVisible="Collapsed"
             IsSettingsVisible="False"
-            CompactPaneLength="48"
             OpenPaneLength="200"
+            PaneDisplayMode="Left"
             SelectionChanged="AppNavigationView_SelectionChanged">
             
             <controls:NavigationView.MenuItems>
@@ -24,9 +24,8 @@
                 </controls:NavigationViewItem>
                 <controls:NavigationViewItem Content="Forum" Tag="Forum" Icon="Message"/>
                 <controls:NavigationViewItem Content="Profile" Tag="Profile" Icon="Contact"/>
-                
+
                 <controls:NavigationViewItemSeparator/>
-                <controls:NavigationViewItemHeader Content="Legacy Features (Team A)"/>
                 <controls:NavigationViewItem Content="Home" Tag="Home" Icon="Home"/>
                 <controls:NavigationViewItem Content="Favorites" Tag="Favorites" Icon="Favorite"/>
                 <controls:NavigationViewItem Content="My Events" Tag="MyEvents" Icon="Calendar"/>

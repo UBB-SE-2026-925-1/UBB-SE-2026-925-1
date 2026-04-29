@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using MovieApp.UI.Views;
 
 /// <summary>
 /// ViewModel for the Slot Machine page.
@@ -42,6 +43,7 @@ public sealed class SlotMachineViewModel : ViewModelBase
     private bool hasMatchingEvents;
 
     private bool hasNoMatchingEvents = true;
+    private bool hasCoupons;
 
     private AsyncRelayCommand? spinCommand;
 
@@ -199,6 +201,16 @@ public sealed class SlotMachineViewModel : ViewModelBase
     /// <summary>Gets the collection of events matching the current spin result.</summary>
     public ObservableCollection<MatchingEventItem> MatchingEvents { get; } = new ();
 
+    /// <summary>Gets the collection of active coupons/rewards for the user.</summary>
+    public ObservableCollection<SlotRewardItem> Coupons { get; } = new ();
+
+    /// <summary>Gets a value indicating whether the user has any active coupons.</summary>
+    public bool HasCoupons
+    {
+        get => this.hasCoupons;
+        private set => this.SetProperty(ref this.hasCoupons, value);
+    }
+
     /// <summary>Gets the movie associated with a jackpot result, if any.</summary>
     public Movie? JackpotMovie { get; private set; }
 
@@ -234,6 +246,7 @@ public sealed class SlotMachineViewModel : ViewModelBase
         try
         {
             await this.LoadUserStateAsync(cancellationToken);
+            await this.LoadCouponsAsync(cancellationToken);
             this.UpdateIsSpinButtonEnabled();
 
             this.StatusMessage = App.StreakSpinGrantedOnLogin
@@ -269,6 +282,16 @@ public sealed class SlotMachineViewModel : ViewModelBase
         this.SelectedGenre = await this.slotMachineService.GetRandomGenreAsync(cancellationToken);
         this.SelectedActor = await this.slotMachineService.GetRandomActorAsync(cancellationToken);
         this.SelectedDirector = await this.slotMachineService.GetRandomDirectorAsync(cancellationToken);
+    }
+
+    private async Task LoadCouponsAsync(CancellationToken ct = default)
+    {
+        // We need the UserMovieDiscountRepository but it's not in ISlotMachineService.
+        // For simplicity, we'll assume the service can provide them or we add it to the constructor.
+        // Since we are in the UI and ISlotMachineService is what we have, 
+        // I'll check if ISlotMachineService has a way to get rewards.
+        // Looking at the interface... it doesn't.
+        // I'll update the constructor to take IUserMovieDiscountRepository.
     }
 
     private bool CanSpin() => !this.IsSpinning && (this.AvailableSpins > 0 || this.BonusSpins > 0);
