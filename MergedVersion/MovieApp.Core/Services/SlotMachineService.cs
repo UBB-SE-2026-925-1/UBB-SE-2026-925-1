@@ -80,14 +80,28 @@ public sealed class SlotMachineService : ISlotMachineService
         }
 
         IReadOnlyList<ReelCombination> validCombinations = await this.movieRepository.GetValidReelCombinationsAsync();
+        
+        List<Genre> distinctGenres;
+        List<Actor> distinctActors;
+        List<Director> distinctDirectors;
+
         if (validCombinations.Count == NoSpinsAvailable)
         {
-            throw new InvalidOperationException("No movies with active screenings available");
+            distinctGenres = (await this.movieRepository.GetGenresAsync()).ToList();
+            distinctActors = (await this.movieRepository.GetActorsAsync()).ToList();
+            distinctDirectors = (await this.movieRepository.GetDirectorsAsync()).ToList();
+            
+            if (distinctGenres.Count == 0 || distinctActors.Count == 0 || distinctDirectors.Count == 0)
+            {
+                throw new InvalidOperationException("No movies with active screenings available");
+            }
         }
-
-        List<Genre> distinctGenres = validCombinations.Select(combination => combination.Genre).DistinctBy(genre => genre.Id).ToList();
-        List<Actor> distinctActors = validCombinations.Select(combination => combination.Actor).DistinctBy(actor => actor.Id).ToList();
-        List<Director> distinctDirectors = validCombinations.Select(combination => combination.Director).DistinctBy(director => director.Id).ToList();
+        else
+        {
+            distinctGenres = validCombinations.Select(combination => combination.Genre).DistinctBy(genre => genre.Id).ToList();
+            distinctActors = validCombinations.Select(combination => combination.Actor).DistinctBy(actor => actor.Id).ToList();
+            distinctDirectors = validCombinations.Select(combination => combination.Director).DistinctBy(director => director.Id).ToList();
+        }
 
         Genre selectedGenre = distinctGenres[this.random.Next(distinctGenres.Count)];
         Actor selectedActor = distinctActors[this.random.Next(distinctActors.Count)];

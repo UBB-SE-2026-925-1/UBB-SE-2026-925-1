@@ -62,12 +62,20 @@ public sealed partial class SlotMachinePage : Page
 
     private async void OnJackpotHit(Movie movie, int discountPercentage)
     {
-        ContentDialog dialog = (ContentDialog)this.Resources["JackpotContentDialog"];
-        dialog.XamlRoot = this.XamlRoot;
+        ContentDialog dialog = new ContentDialog
+        {
+            XamlRoot = this.XamlRoot,
+            ContentTemplate = (DataTemplate)this.Resources["JackpotContentDialogTemplate"],
+            Content = new JackpotDialogViewModel(movie, discountPercentage),
+            PrimaryButtonText = "Collect!",
+            DefaultButton = ContentDialogButton.Primary
+        };
 
-        JackpotDialogViewModel jackpotViewModel = new JackpotDialogViewModel(movie, discountPercentage);
+        if (Application.Current.Resources.TryGetValue("DefaultContentDialogStyle", out object style))
+        {
+            dialog.Style = style as Style;
+        }
 
-        dialog.Content = jackpotViewModel;
         await dialog.ShowAsync();
 
         this.Focus(FocusState.Programmatic);

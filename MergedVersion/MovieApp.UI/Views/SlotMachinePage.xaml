@@ -14,76 +14,69 @@
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <local:BoolToHighlightBrushConverter x:Key="BoolToHighlightBrushConverter" />
 
-        <ContentDialog x:Key="JackpotContentDialog" DefaultButton="Primary" PrimaryButtonText="Collect!">
+        <SolidColorBrush x:Key="ContentDialogBackground" Color="#0B0B1E"/>
+        <SolidColorBrush x:Key="ContentDialogForeground" Color="#E8E8FF"/>
+        <SolidColorBrush x:Key="ContentDialogBorderBrush" Color="#C8971A"/>
+        <SolidColorBrush x:Key="ContentDialogTitleForeground" Color="#C8971A"/>
 
-            <ContentDialog.Resources>
-                <SolidColorBrush x:Key="ContentDialogBackground" Color="#0B0B1E"/>
-                <SolidColorBrush x:Key="ContentDialogForeground" Color="#E8E8FF"/>
-                <SolidColorBrush x:Key="ContentDialogBorderBrush" Color="#C8971A"/>
-                <SolidColorBrush x:Key="ContentDialogTitleForeground" Color="#C8971A"/>
-            </ContentDialog.Resources>
+        <DataTemplate x:Key="JackpotContentDialogTemplate">
+            <StackPanel Spacing="18" HorizontalAlignment="Center" MinWidth="320">
+                <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE7FC;" FontSize="22" Foreground="#C8971A" />
+                    <TextBlock Text="JACKPOT!" FontSize="22" FontWeight="Bold" Foreground="#C8971A" CharacterSpacing="40" />
+                    <FontIcon Glyph="&#xE7FC;" FontSize="22" Foreground="#C8971A" />
+                </StackPanel>
 
-            <ContentDialog.ContentTemplate>
-                <DataTemplate>
-                    <StackPanel Spacing="18" HorizontalAlignment="Center" MinWidth="320">
-                        <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
-                            <FontIcon Glyph="&#xE7FC;" FontSize="22" Foreground="#C8971A" />
-                            <TextBlock Text="JACKPOT!" FontSize="22" FontWeight="Bold" Foreground="#C8971A" CharacterSpacing="40" />
-                            <FontIcon Glyph="&#xE7FC;" FontSize="22" Foreground="#C8971A" />
+                <Rectangle Height="1" Fill="#80C8971A" HorizontalAlignment="Stretch" />
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                    <Ellipse Width="10" Height="10" Fill="#C8971A" />
+                    <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
+                    <Ellipse Width="10" Height="10" Fill="#C8971A" />
+                    <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
+                    <Ellipse Width="10" Height="10" Fill="#C8971A" />
+                    <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
+                    <Ellipse Width="10" Height="10" Fill="#C8971A" />
+                    <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
+                    <Ellipse Width="10" Height="10" Fill="#C8971A" />
+                    <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
+                    <Ellipse Width="10" Height="10" Fill="#C8971A" />
+                </StackPanel>
+
+                <Rectangle Height="1" Fill="#80C8971A" HorizontalAlignment="Stretch" />
+
+                <TextBlock Text="{Binding Movie.Title}" FontSize="22" FontWeight="Bold" Foreground="#C8971A" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="340" />
+                <TextBlock Text="All three reels aligned — you hit the jackpot!" FontSize="12" Foreground="#A0A0C0" HorizontalAlignment="Center" TextAlignment="Center" />
+
+                <Border Background="#40C8971A" BorderBrush="#C8971A" BorderThickness="1" CornerRadius="12" Padding="24,14" HorizontalAlignment="Center">
+                    <StackPanel Spacing="2" HorizontalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding DiscountPercentage}" FontSize="44" FontWeight="Bold" Foreground="#C8971A" />
+                            <TextBlock Text="%" FontSize="44" FontWeight="Bold" Foreground="#C8971A" />
                         </StackPanel>
-
-                        <Rectangle Height="1" Fill="#80C8971A" HorizontalAlignment="Stretch" />
-
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-                            <Ellipse Width="10" Height="10" Fill="#C8971A" />
-                            <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
-                            <Ellipse Width="10" Height="10" Fill="#C8971A" />
-                            <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
-                            <Ellipse Width="10" Height="10" Fill="#C8971A" />
-                            <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
-                            <Ellipse Width="10" Height="10" Fill="#C8971A" />
-                            <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
-                            <Ellipse Width="10" Height="10" Fill="#C8971A" />
-                            <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
-                            <Ellipse Width="10" Height="10" Fill="#C8971A" />
-                        </StackPanel>
-
-                        <Rectangle Height="1" Fill="#80C8971A" HorizontalAlignment="Stretch" />
-
-                        <TextBlock Text="{Binding Movie.Title}" FontSize="22" FontWeight="Bold" Foreground="#C8971A" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="340" />
-                        <TextBlock Text="All three reels aligned — you hit the jackpot!" FontSize="12" Foreground="#A0A0C0" HorizontalAlignment="Center" TextAlignment="Center" />
-
-                        <Border Background="#40C8971A" BorderBrush="#C8971A" BorderThickness="1" CornerRadius="12" Padding="24,14" HorizontalAlignment="Center">
-                            <StackPanel Spacing="2" HorizontalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock Text="{Binding DiscountPercentage}" FontSize="44" FontWeight="Bold" Foreground="#C8971A" />
-                                    <TextBlock Text="%" FontSize="44" FontWeight="Bold" Foreground="#C8971A" />
-                                </StackPanel>
-                                <TextBlock Text="DISCOUNT EARNED" FontSize="11" FontWeight="Bold" Foreground="#C8971A" HorizontalAlignment="Center" CharacterSpacing="120" />
-                            </StackPanel>
-                        </Border>
-
-                        <Rectangle Height="1" Fill="#80C8971A" HorizontalAlignment="Stretch" />
-
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-                            <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
-                            <Ellipse Width="10" Height="10" Fill="#C8971A" />
-                            <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
-                            <Ellipse Width="10" Height="10" Fill="#C8971A" />
-                            <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
-                            <Ellipse Width="10" Height="10" Fill="#C8971A" />
-                            <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
-                            <Ellipse Width="10" Height="10" Fill="#C8971A" />
-                            <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
-                            <Ellipse Width="10" Height="10" Fill="#C8971A" />
-                            <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
-                        </StackPanel>
-
-                        <Rectangle Height="1" Fill="#80C8971A" HorizontalAlignment="Stretch" />
+                        <TextBlock Text="DISCOUNT EARNED" FontSize="11" FontWeight="Bold" Foreground="#C8971A" HorizontalAlignment="Center" CharacterSpacing="120" />
                     </StackPanel>
-                </DataTemplate>
-            </ContentDialog.ContentTemplate>
-        </ContentDialog>
+                </Border>
+
+                <Rectangle Height="1" Fill="#80C8971A" HorizontalAlignment="Stretch" />
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                    <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
+                    <Ellipse Width="10" Height="10" Fill="#C8971A" />
+                    <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
+                    <Ellipse Width="10" Height="10" Fill="#C8971A" />
+                    <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
+                    <Ellipse Width="10" Height="10" Fill="#C8971A" />
+                    <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
+                    <Ellipse Width="10" Height="10" Fill="#C8971A" />
+                    <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
+                    <Ellipse Width="10" Height="10" Fill="#C8971A" />
+                    <Ellipse Width="10" Height="10" Fill="#6A4E0F" />
+                </StackPanel>
+
+                <Rectangle Height="1" Fill="#80C8971A" HorizontalAlignment="Stretch" />
+            </StackPanel>
+        </DataTemplate>
     </Page.Resources>
 
     <ScrollViewer x:Name="RootScrollViewer" VerticalScrollBarVisibility="Auto">
@@ -346,6 +339,44 @@
                         </ItemsControl>
                     </ScrollViewer>
 
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource SurfaceCardStyle}" Margin="24,0,24,24" Visibility="{Binding HasCoupons, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel Spacing="16">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE8B0;" FontSize="18" VerticalAlignment="Center" />
+                        <TextBlock Text="My Tickets &amp; Rewards" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Border Background="#C8971A" CornerRadius="10" Padding="8,2">
+                            <TextBlock Text="{Binding Coupons.Count}" FontSize="12" FontWeight="Bold" Foreground="#0B0B1E" />
+                        </Border>
+                    </StackPanel>
+                    
+                    <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Coupons}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#0E0E24" BorderBrush="#3A3A6A" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,8">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding MovieTitle}" FontWeight="Bold" FontSize="14" />
+                                                <TextBlock Text="Ticket won from slot machine jackpot" FontSize="12" Opacity="0.6" />
+                                            </StackPanel>
+                                            
+                                            <Border Grid.Column="1" Background="#16163A" CornerRadius="6" Padding="12,8">
+                                                <TextBlock Text="{Binding DiscountText}" VerticalAlignment="Center" FontWeight="Bold" FontSize="16" Foreground="#C8971A" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </StackPanel>
             </Border>
         </StackPanel>
