@@ -1,0 +1,201 @@
+@model MovieApp.Web.Models.MovieDetailViewModel
+
+@{
+    ViewData["Title"] = Model.Movie.Title;
+    int filledStars = (int)Math.Round(Model.AverageRating);
+}
+
+@* ── Status message ──────────────────────────────────────────────────────── *@
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    var alertClass = Model.StatusMessage.StartsWith("Could not") ? "alert-warning" : "alert-success";
+    <div class="alert @alertClass alert-dismissible fade show" role="alert">
+        @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@* ── Movie header ────────────────────────────────────────────────────────── *@
+<div class="row g-4 mb-5">
+    <div class="col-md-3 text-center">
+        @if (!string.IsNullOrEmpty(Model.Movie.PosterUrl))
+        {
+            <img src="@Model.Movie.PosterUrl" alt="@Model.Movie.Title poster"
+                 class="img-fluid rounded shadow" style="max-height:420px;" />
+        }
+        else
+        {
+            <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center"
+                 style="height:300px;">
+                <span class="fs-4">No Poster</span>
+            </div>
+        }
+    </div>
+    <div class="col-md-9">
+        <h1 class="fw-bold">@Model.Movie.Title</h1>
+
+        <div class="mb-2">
+            @for (int i = 1; i <= 5; i++)
+            {
+                <span class="fs-4 @(i <= filledStars ? "star-filled" : "star-empty")">★</span>
+            }
+            <span class="ms-2 text-muted">@Model.AverageRating.ToString("F1") / 5</span>
+            <span class="ms-3 text-muted small">(@Model.Reviews.Count review@(Model.Reviews.Count != 1 ? "s" : ""))</span>
+        </div>
+
+        <div class="mb-3">
+            @foreach (var genre in Model.Movie.Genres)
+            {
+                <span class="badge bg-primary me-1">@genre.Name</span>
+            }
+        </div>
+
+        <dl class="row small">
+            <dt class="col-sm-3">Year</dt>
+            <dd class="col-sm-9">@Model.Movie.ReleaseYear</dd>
+
+            <dt class="col-sm-3">Duration</dt>
+            <dd class="col-sm-9">@Model.Movie.DurationMinutes min</dd>
+
+            @if (Model.Movie.Directors.Any())
+            {
+                <dt class="col-sm-3">Director(s)</dt>
+                <dd class="col-sm-9">@string.Join(", ", Model.Movie.Directors.Select(d => d.Name))</dd>
+            }
+
+            @if (Model.Movie.Actors.Any())
+            {
+                <dt class="col-sm-3">Cast</dt>
+                <dd class="col-sm-9">@string.Join(", ", Model.Movie.Actors.Take(8).Select(a => a.Name))
+                    @if (Model.Movie.Actors.Count > 8) { <span class="text-muted">…</span> }
+                </dd>
+            }
+        </dl>
+
+        @if (!string.IsNullOrEmpty(Model.Movie.Description))
+        {
+            <p class="mt-3">@Model.Movie.Description</p>
+        }
+
+        <a href="/Screening/ForMovie/@Model.Movie.Id" class="btn btn-outline-primary btn-sm mt-2">
+            View Screenings
+        </a>
+    </div>
+</div>
+
+@* ── External critic reviews ─────────────────────────────────────────────── *@
+@if (Model.CriticReviews.Any())
+{
+    <section class="mb-5">
+        <h3 class="border-bottom pb-2">Critic Reviews</h3>
+        <div class="row g-3">
+            @foreach (var cr in Model.CriticReviews)
+            {
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-uppercase small text-muted">@cr.Source</span>
+                                @if (cr.HasScore)
+                                {
+                                    <span class="badge bg-info text-dark fs-6">@cr.ScoreDisplay</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(cr.Headline))
+                            {
+                                <h6 class="card-title">@cr.Headline</h6>
+                            }
+                            @if (!string.IsNullOrEmpty(cr.Snippet))
+                            {
+                                <p class="card-text small text-muted">@cr.Snippet</p>
+                            }
+                            @if (!string.IsNullOrEmpty(cr.Url))
+                            {
+                                <a href="@cr.Url" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+                                    Read full review ↗
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+@* ── User reviews ────────────────────────────────────────────────────────── *@
+<section class="mb-5" id="reviews">
+    <h3 class="border-bottom pb-2">Reviews</h3>
+
+    @await Html.PartialAsync("_ReviewList", Model.Reviews)
+
+    @if (!Model.HasUserReview)
+    {
+        <div class="card mt-4">
+            <div class="card-header fw-semibold">Write a Review</div>
+            <div class="card-body">
+                <form method="post" asp-action="AddReview" asp-controller="Movie">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="MovieId" value="@Model.Movie.Id" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Your Rating</label>
+                        <select name="StarRating" class="form-select" style="max-width:200px;" required>
+                            <option value="">— choose —</option>
+                            <option value="1">★ 1 — Poor</option>
+                            <option value="2">★★ 2 — Fair</option>
+                            <option value="3">★★★ 3 — Good</option>
+                            <option value="4">★★★★ 4 — Great</option>
+                            <option value="5">★★★★★ 5 — Excellent</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Your Review</label>
+                        <textarea name="Content" class="form-control" rows="4"
+                                  placeholder="Share your thoughts about this movie…"
+                                  maxlength="5000" required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                </form>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info mt-3">
+            You have already reviewed this movie.
+        </div>
+    }
+</section>
+
+@* ── Comments / Forum ────────────────────────────────────────────────────── *@
+<section class="mb-5" id="comments">
+    <h3 class="border-bottom pb-2">Discussion</h3>
+
+    @if (!Model.RootComments.Any())
+    {
+        <p class="text-muted fst-italic">No comments yet. Start the discussion!</p>
+    }
+    else
+    {
+        @await Html.PartialAsync("_CommentTree", Model.RootComments)
+    }
+
+    <div class="card mt-4">
+        <div class="card-header fw-semibold">Add a Comment</div>
+        <div class="card-body">
+            <form method="post" asp-action="AddComment" asp-controller="Movie">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="MovieId" value="@Model.Movie.Id" />
+                <div class="mb-3">
+                    <textarea name="Content" class="form-control" rows="3"
+                              placeholder="Join the discussion…"
+                              maxlength="10000" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Post Comment</button>
+            </form>
+        </div>
+    </div>
+</section>
