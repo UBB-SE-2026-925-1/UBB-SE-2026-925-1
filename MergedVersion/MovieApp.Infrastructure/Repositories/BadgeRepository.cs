@@ -38,5 +38,14 @@ public sealed class BadgeRepository : IBadgeRepository
         this.context.Badges.Remove(badge);
         return await this.context.SaveChangesAsync(ct) > 0;
     }
+
+    public async Task<List<Badge>> GetBadgesForUserAsync(int userId, CancellationToken ct = default)
+    {
+        return await this.context.UserBadges
+            .Where(ub => ub.User.Id == userId)
+            .Include(ub => ub.Badge)
+            .Select(ub => ub.Badge)
+            .ToListAsync(ct);
+    }
 }
 

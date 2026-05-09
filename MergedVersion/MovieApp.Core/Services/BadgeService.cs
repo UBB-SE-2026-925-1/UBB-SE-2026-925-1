@@ -44,7 +44,7 @@ public sealed class BadgeService : IBadgeService
         var associations = await this.userBadgeRepository.GetAllAsync(ct);
 
         return associations
-            .Where(ub => ub.User?.Id == userId && ub.Badge is not null)
+            .Where(ub => ub.User != null && ub.User.Id == userId && ub.Badge != null)
             .Select(ub => ub.Badge!)
             .ToList();
     }

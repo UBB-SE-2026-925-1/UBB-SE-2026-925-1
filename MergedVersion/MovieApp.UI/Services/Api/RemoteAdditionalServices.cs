@@ -30,7 +30,8 @@ public class RemoteBadgeService : IBadgeService
     public RemoteBadgeService(ApiClient apiClient) => this.apiClient = apiClient;
     public async Task<List<Badge>> GetUserBadgesAsync(int userId, CancellationToken ct = default) => 
         (await this.apiClient.GetAsync<IEnumerable<Badge>>($"api/users/{userId}/badges", ct))?.ToList() ?? new List<Badge>();
-    public Task<List<Badge>> GetAllBadgesAsync(CancellationToken ct = default) => throw new NotImplementedException();
+    public async Task<List<Badge>> GetAllBadgesAsync(CancellationToken ct = default) =>
+        (await this.apiClient.GetAsync<IEnumerable<Badge>>("api/users/badges", ct))?.ToList() ?? new List<Badge>();
     public Task CheckAndAwardBadgesAsync(int userId, CancellationToken ct = default) => Task.CompletedTask; // Handled by server
 }
 

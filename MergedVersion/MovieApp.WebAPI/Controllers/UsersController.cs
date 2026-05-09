@@ -36,6 +36,13 @@ public class UsersController : ControllerBase
         return Ok(stats);
     }
 
+    [HttpGet("badges")]
+    public async Task<ActionResult<IEnumerable<Badge>>> GetAllBadges()
+    {
+        var badges = await this.badgeService.GetAllBadgesAsync();
+        return Ok(badges);
+    }
+
     [HttpGet("{id}/badges")]
     public async Task<ActionResult<IEnumerable<Badge>>> GetUserBadges(int id)
     {
