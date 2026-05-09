@@ -1,0 +1,272 @@
+@model MovieApp.Web.Models.CatalogViewModel
+@{
+    ViewData["Title"] = "Movie Catalog";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h2 mb-0 fw-bold">🎬 Movie Catalog</h1>
+    @if (Model.HasActiveFilter)
+    {
+        <a href="@Url.Action("Index", "Catalog")" class="btn btn-sm btn-outline-secondary">
+            ✕ Clear filters
+        </a>
+    }
+</div>
+
+@* ── API error banner ──────────────────────────────────────────────────── *@
+@if (ViewBag.ErrorMessage is string errMsg)
+{
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+             class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2" viewBox="0 0 16 16">
+            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98
+                     1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35
+                     3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1
+                     0 0 1 0-2z"/>
+        </svg>
+        <span>@errMsg</span>
+    </div>
+}
+
+@* ── Filter bar ────────────────────────────────────────────────────────── *@
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body py-3">
+        <form method="get" action="@Url.Action("Index", "Catalog")" id="filterForm">
+            <div class="row g-2 align-items-end">
+
+                @* Search *@
+                <div class="col-12 col-md-4">
+                    <label class="form-label small fw-semibold mb-1" for="q">Search</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i>🔍</span>
+                        <input type="text" id="q" name="q" class="form-control"
+                               placeholder="Search by title…" value="@Model.SearchQuery"
+                               autocomplete="off" />
+                    </div>
+                </div>
+
+                @* Genre *@
+                <div class="col-6 col-md-3">
+                    <label class="form-label small fw-semibold mb-1" for="genre">Genre</label>
+                    <select id="genre" name="genre" class="form-select">
+                        <option value="">All Genres</option>
+                        @foreach (var g in Model.Genres)
+                        {
+                            if (g.Name == Model.SelectedGenre)
+                            {
+                                <option value="@g.Name" selected>@g.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@g.Name">@g.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                @* Min Rating *@
+                <div class="col-6 col-md-3">
+                    <label class="form-label small fw-semibold mb-1" for="minRating">
+                        Min Rating: <span id="ratingDisplay">@Model.MinRating.ToString("F1")</span>⭐
+                    </label>
+                    <input type="range" id="minRating" name="minRating" class="form-range"
+                           min="0" max="5" step="0.5"
+                           value="@Model.MinRating.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)"
+                           oninput="document.getElementById('ratingDisplay').textContent = parseFloat(this.value).toFixed(1)" />
+                </div>
+
+                @* Submit *@
+                <div class="col-12 col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Apply</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ── Result summary ─────────────────────────────────────────────────────── *@
+<p class="text-muted small mb-3">
+    @if (Model.TotalCount == 0)
+    {
+        <span>No movies found.</span>
+    }
+    else
+    {
+        <span>
+            Showing
+            <strong>@(((Model.Page - 1) * 12) + 1)–@Math.Min(Model.Page * 12, Model.TotalCount)</strong>
+            of <strong>@Model.TotalCount</strong> movie@(Model.TotalCount == 1 ? "" : "s")
+            @if (Model.HasActiveFilter) { <span>matching your filters</span> }
+        </span>
+    }
+</p>
+
+@* ── Movie grid ─────────────────────────────────────────────────────────── *@
+@if (Model.Movies.Count == 0)
+{
+    <div class="text-center py-5 text-muted">
+        <div style="font-size:3rem;">🎞️</div>
+        <h4 class="mt-3">No movies found</h4>
+        <p>Try adjusting your search or filters.</p>
+        <a href="@Url.Action("Index", "Catalog")" class="btn btn-outline-primary mt-2">
+            Show all movies
+        </a>
+    </div>
+}
+else
+{
+    <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        @foreach (var movie in Model.Movies)
+        {
+            <div class="col">
+                <a href="@Url.Action("Detail", "Movie", new { id = movie.Id })"
+                   class="text-decoration-none movie-card-link">
+                    <div class="card h-100 border-0 shadow-sm movie-card">
+
+                        @* Poster *@
+                        <div class="ratio ratio-2x3 overflow-hidden" style="border-radius: .375rem .375rem 0 0;">
+                            @if (!string.IsNullOrWhiteSpace(movie.PosterUrl))
+                            {
+                                <img src="@movie.PosterUrl" alt="@movie.Title poster"
+                                     class="card-img-top object-fit-cover"
+                                     loading="lazy"
+                                     onerror="this.onerror=null;this.src='https://via.placeholder.com/300x450?text=No+Image';" />
+                            }
+                            else
+                            {
+                                <div class="d-flex align-items-center justify-content-center bg-secondary text-white h-100">
+                                    <span style="font-size:2rem;">🎬</span>
+                                </div>
+                            }
+
+                            @* Rating badge overlay *@
+                            @if (movie.AverageRating > 0)
+                            {
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    <span class="badge bg-dark bg-opacity-75 fs-6 px-2 py-1">
+                                        ⭐ @movie.AverageRating.ToString("F1")
+                                    </span>
+                                </div>
+                            }
+                        </div>
+
+                        @* Info *@
+                        <div class="card-body px-3 pb-3 pt-2">
+                            <h6 class="card-title fw-bold mb-1 text-truncate" title="@movie.Title">
+                                @movie.Title
+                            </h6>
+                            <p class="card-text text-muted small mb-1">
+                                @movie.ReleaseYear
+                                @if (!string.IsNullOrWhiteSpace(movie.GenreDisplay) && movie.GenreDisplay != "No Genre")
+                                {
+                                    <span> · @movie.GenreDisplay</span>
+                                }
+                            </p>
+                            @if (!string.IsNullOrWhiteSpace(movie.Description))
+                            {
+                                <p class="card-text small text-muted lh-sm" style="
+                                    display:-webkit-box;
+                                    -webkit-line-clamp:2;
+                                    -webkit-box-orient:vertical;
+                                    overflow:hidden;">
+                                    @movie.Description
+                                </p>
+                            }
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+}
+
+@* ── Pagination ─────────────────────────────────────────────────────────── *@
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-5" aria-label="Catalog pagination">
+        <ul class="pagination justify-content-center flex-wrap">
+
+            @* Previous *@
+            <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                <a class="page-link"
+                   href="@Url.Action("Index", "Catalog", new { q = Model.SearchQuery, genre = Model.SelectedGenre, minRating = Model.MinRating, page = Model.Page - 1 })">
+                    &laquo; Prev
+                </a>
+            </li>
+
+            @* Numbered pages (show at most 7 around current) *@
+            @{
+                int windowStart = Math.Max(1, Model.Page - 3);
+                int windowEnd   = Math.Min(Model.TotalPages, Model.Page + 3);
+            }
+
+            @if (windowStart > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Index", "Catalog", new { q = Model.SearchQuery, genre = Model.SelectedGenre, minRating = Model.MinRating, page = 1 })">1</a>
+                </li>
+                @if (windowStart > 2)
+                {
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                }
+            }
+
+            @for (int p = windowStart; p <= windowEnd; p++)
+            {
+                <li class="page-item @(p == Model.Page ? "active" : "")">
+                    <a class="page-link"
+                       href="@Url.Action("Index", "Catalog", new { q = Model.SearchQuery, genre = Model.SelectedGenre, minRating = Model.MinRating, page = p })">
+                        @p
+                    </a>
+                </li>
+            }
+
+            @if (windowEnd < Model.TotalPages)
+            {
+                @if (windowEnd < Model.TotalPages - 1)
+                {
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                }
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Index", "Catalog", new { q = Model.SearchQuery, genre = Model.SelectedGenre, minRating = Model.MinRating, page = Model.TotalPages })">@Model.TotalPages</a>
+                </li>
+            }
+
+            @* Next *@
+            <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                <a class="page-link"
+                   href="@Url.Action("Index", "Catalog", new { q = Model.SearchQuery, genre = Model.SelectedGenre, minRating = Model.MinRating, page = Model.Page + 1 })">
+                    Next &raquo;
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <p class="text-center text-muted small">Page @Model.Page of @Model.TotalPages</p>
+}
+
+@section Scripts {
+<style>
+    /* Hover lift effect */
+    .movie-card {
+        transition: transform .2s ease, box-shadow .2s ease;
+        cursor: pointer;
+    }
+    .movie-card-link:hover .movie-card {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .15) !important;
+    }
+
+    /* Poster keeps its ratio */
+    .ratio-2x3 { --bs-aspect-ratio: 150%; }
+
+    /* Make img fill the ratio box */
+    .object-fit-cover { object-fit: cover; width: 100%; height: 100%; }
+</style>
+
+<script>
+    // Auto-submit on genre change so the page re-filters immediately
+    document.getElementById('genre').addEventListener('change', function () {
+        document.getElementById('filterForm').submit();
+    });
+</script>
+}
