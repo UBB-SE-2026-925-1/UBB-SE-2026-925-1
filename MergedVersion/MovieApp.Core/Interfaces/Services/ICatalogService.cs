@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 #nullable enable
 
 using MovieApp.Core.Models;
-using MovieApp.Core.Models;
 
 namespace MovieApp.Core.Interfaces.Service;
 
