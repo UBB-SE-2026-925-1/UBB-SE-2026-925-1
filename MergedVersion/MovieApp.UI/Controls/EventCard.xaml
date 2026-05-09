@@ -33,9 +33,9 @@
                 CornerRadius="8,8,0,0">
                 <Grid>
                     <Image
-                        Source="{x:Bind Model.PosterUrl, Mode=OneWay}"
                         Stretch="UniformToFill"
-                        Opacity="0.6" />
+                        Opacity="0.6"
+                        Source="{x:Bind Model.PosterUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}" />  
                     <StackPanel 
                         Orientation="Horizontal" 
                         HorizontalAlignment="Right" 

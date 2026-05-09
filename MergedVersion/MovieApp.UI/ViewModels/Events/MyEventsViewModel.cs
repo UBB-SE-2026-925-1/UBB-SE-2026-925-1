@@ -99,9 +99,28 @@ public sealed class MyEventsViewModel : EventListPageViewModel
     private async Task CancelParticipationAsync()
     {
         if (this.SelectedEvent == null || this.attendanceRepository == null) return;
-        
-        await this.attendanceRepository.CancelAttendanceAsync(App.CurrentUserId, this.SelectedEvent.Id);
-        await this.InitializeAsync();
+
+        try
+        {
+            int eventId = this.SelectedEvent.Id;
+            await this.attendanceRepository.CancelAttendanceAsync(App.CurrentUserId, eventId);
+
+            if (this.eventRepository is not null)
+            {
+                var ev = await this.eventRepository.FindByIdAsync(eventId);
+                if (ev is not null && ev.CurrentEnrollment > 0)
+                {
+                    await this.eventRepository.UpdateEnrollmentAsync(eventId, ev.CurrentEnrollment - 1);
+                }
+            }
+
+            this.SelectedEvent = null;
+            await this.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"CancelParticipation error: {ex.Message}");
+        }
     }
 
     private async Task DeleteEventAsync()
