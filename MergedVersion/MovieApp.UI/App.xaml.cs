@@ -9,6 +9,10 @@ using MovieApp.UI.Services;
 using MovieApp.UI.Services.Api;
 using MovieApp.UI.ViewModels.Events;
 using System.Net.Http;
+using Microsoft.EntityFrameworkCore;
+using MovieApp.Infrastructure;
+using MovieApp.Infrastructure.Data;
+using MovieApp.Infrastructure.Repositories;
 
 namespace MovieApp.UI;
 
@@ -21,7 +25,7 @@ public partial class App : Application
     public static IServiceProvider ServiceProvider { get; private set; } = null!;
     public static IConfiguration Configuration { get; private set; } = null!;
     public static IAppServices Services => ServiceProvider.GetRequiredService<IAppServices>();
-    public static int CurrentUserId { get; private set; } = 1; // Default for testing
+    public static int CurrentUserId { get; private set; } = 1;
     public static bool StreakSpinGrantedOnLogin { get; private set; }
     public static MainWindow CurrentMainWindow => (MainWindow)((App)Application.Current)._window!;
     public static bool EnsureServicesValid() => ServiceProvider != null;
@@ -43,22 +47,37 @@ public partial class App : Application
 
     private void ConfigureServices(IServiceCollection services)
     {
-        // 1. API Client Configuration
+        // 1. Database
+        services.AddDbContextFactory<MovieAppDbContext>(options =>
+            options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+
+        // 2. API Client
         services.AddSingleton<HttpClient>(new HttpClient { BaseAddress = new Uri("http://localhost:5207/") });
         services.AddSingleton<ApiClient>();
 
-        // 2. Remote Repositories (only where needed by legacy views)
-        services.AddScoped<IEventRepository, RemoteEventRepository>();
+        // 3. Repositories
+        services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<ITriviaRepository, RemoteTriviaRepository>();
         services.AddScoped<ITriviaRewardRepository, RemoteTriviaRewardRepository>();
         services.AddScoped<IUserSlotMachineStateRepository, RemoteUserSlotMachineStateRepository>();
         services.AddScoped<IAmbassadorRepository, RemoteAmbassadorRepository>();
         services.AddScoped<IScreeningRepository, RemoteScreeningRepository>();
         services.AddScoped<IUserMovieDiscountRepository, RemoteUserMovieDiscountRepository>();
-        services.AddScoped<IUserEventAttendanceRepository, RemoteUserEventAttendanceRepository>();
+        services.AddTransient<IUserEventAttendanceRepository, UserEventAttendanceRepository>();
         services.AddScoped<IPriceWatcherRepository, RemotePriceWatcherRepository>();
+        services.AddTransient<IUserEventAttendanceRepository>(provider =>
+        {
+            var factory = provider.GetRequiredService<IDbContextFactory<MovieAppDbContext>>();
+            return new UserEventAttendanceRepository(factory.CreateDbContext());
+        });
 
-        // 3. Remote Services
+        services.AddTransient<IEventRepository>(provider =>
+        {
+            var factory = provider.GetRequiredService<IDbContextFactory<MovieAppDbContext>>();
+            return new EventRepository(factory.CreateDbContext());
+        });
+
+        // 4. Services
         services.AddScoped<ICatalogService, RemoteCatalogService>();
         services.AddScoped<IReviewService, RemoteReviewService>();
         services.AddScoped<ICommentService, RemoteCommentService>();
@@ -70,8 +89,7 @@ public partial class App : Application
         services.AddSingleton<ISlotMachineService, RemoteSlotMachineService>();
         services.AddSingleton<IFavoriteEventService, RemoteFavoriteEventService>();
         services.AddSingleton<ICurrentUserService, RemoteCurrentUserService>();
-        
-        // These can stay local as they are logic-only or not yet API-ified
+
         services.AddSingleton<ISlotMachineResultService, SlotMachineResultService>();
         services.AddSingleton<IReferralCodeGenerator, ReferralCodeGenerator>();
         services.AddSingleton<IReferralLogService, ReferralLogService>();
@@ -79,12 +97,10 @@ public partial class App : Application
         services.AddSingleton<IRewardService, RewardService>();
         services.AddSingleton<ExternalReviewService>();
 
-        // 3.5 Options
         services.Configure<BootstrapUserOptions>(Configuration.GetSection("Authentication:BootstrapUser"));
-        services.AddSingleton(resolver => 
+        services.AddSingleton(resolver =>
             resolver.GetRequiredService<Microsoft.Extensions.Options.IOptions<BootstrapUserOptions>>().Value);
-        
-        // Legacy Support
+
         services.AddSingleton<IAppServices, DIAppServices>();
         services.AddSingleton<ReelAnimationService>();
         services.AddSingleton<ISlotMachineAnimationService, SlotMachineAnimationService>();
@@ -94,7 +110,7 @@ public partial class App : Application
         services.AddSingleton<IEventUserStateService, EventUserStateService>();
         services.AddSingleton<IEventJoinService, EventJoinService>();
 
-        // 4. ViewModels
+        // 5. ViewModels
         services.AddTransient<CatalogViewModel>();
         services.AddTransient<BattleViewModel>();
         services.AddTransient<ForumViewModel>();
@@ -104,14 +120,14 @@ public partial class App : Application
         services.AddTransient<FavoritesViewModel>();
         services.AddTransient<MarathonPageViewModel>();
         services.AddTransient<NotificationsViewModel>();
-        services.AddTransient<RewardsViewModel>(provider => 
+        services.AddTransient<RewardsViewModel>(provider =>
         {
             var currentUserService = provider.GetRequiredService<ICurrentUserService>();
             return new RewardsViewModel(
                 provider.GetRequiredService<ITriviaRewardRepository>(),
                 currentUserService.CurrentUser.Id);
         });
-        services.AddTransient<SlotMachineViewModel>(provider => 
+        services.AddTransient<SlotMachineViewModel>(provider =>
         {
             var currentUserService = provider.GetRequiredService<ICurrentUserService>();
             return new SlotMachineViewModel(
@@ -120,8 +136,12 @@ public partial class App : Application
                 provider.GetRequiredService<ISlotMachineAnimationService>(),
                 provider.GetRequiredService<IUserMovieDiscountRepository>());
         });
-        services.AddTransient<MyEventsViewModel>();
-        services.AddTransient<TriviaWheelViewModel>(provider => 
+        services.AddTransient<MyEventsViewModel>(provider => new MyEventsViewModel(
+                provider.GetRequiredService<IPriceWatcherRepository>(),
+                provider.GetRequiredService<IEventRepository>(),
+                provider.GetRequiredService<IUserEventAttendanceRepository>()
+        ));
+        services.AddTransient<TriviaWheelViewModel>(provider =>
         {
             var currentUserService = provider.GetRequiredService<ICurrentUserService>();
             return new TriviaWheelViewModel(
@@ -132,7 +152,7 @@ public partial class App : Application
         });
         services.AddTransient<JackpotDialogViewModel>();
 
-        // 5. Main Window
+        // 6. Main Window
         services.AddSingleton<MainWindow>();
     }
 
@@ -141,19 +161,26 @@ public partial class App : Application
         try
         {
             System.Diagnostics.Debug.WriteLine(">>> App Starting...");
-            
-            System.Diagnostics.Debug.WriteLine(">>> Step 1: Initializing CurrentUser via API...");
+
+            using (var scope = ServiceProvider.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<MovieAppDbContext>();
+                await db.Database.EnsureCreatedAsync();
+                await DbInitializer.SeedAsync(db);
+            }
+
+            System.Diagnostics.Debug.WriteLine(">>> Initializing CurrentUser via API...");
             var currentUserService = ServiceProvider.GetRequiredService<ICurrentUserService>();
             await currentUserService.InitializeAsync();
             CurrentUserId = currentUserService.CurrentUser.Id;
-            System.Diagnostics.Debug.WriteLine($">>> Step 1: User {currentUserService.CurrentUser.Username} (ID: {CurrentUserId}) loaded.");
+            System.Diagnostics.Debug.WriteLine($">>> User '{currentUserService.CurrentUser.Username}' (ID: {CurrentUserId}) loaded.");
 
             System.Diagnostics.Debug.WriteLine(">>> Checking slot machine login streaks...");
             var slotMachineService = ServiceProvider.GetRequiredService<ISlotMachineService>();
             await slotMachineService.RecordLoginAndCheckStreakAsync(CurrentUserId);
             StreakSpinGrantedOnLogin = await slotMachineService.GrantStreakSpinAsync(CurrentUserId);
 
-            System.Diagnostics.Debug.WriteLine(">>> Step 2: Launching MainWindow...");
+            System.Diagnostics.Debug.WriteLine(">>> Launching MainWindow...");
             _window = ServiceProvider.GetRequiredService<MainWindow>();
             _window.Activate();
             System.Diagnostics.Debug.WriteLine(">>> App Started Successfully.");
@@ -163,9 +190,7 @@ public partial class App : Application
             System.Diagnostics.Debug.WriteLine($">>> CRITICAL STARTUP ERROR: {ex.Message}");
             System.Diagnostics.Debug.WriteLine(ex.StackTrace);
             if (ex.InnerException != null)
-            {
                 System.Diagnostics.Debug.WriteLine($">>> INNER ERROR: {ex.InnerException.Message}");
-            }
             if (System.Diagnostics.Debugger.IsAttached) System.Diagnostics.Debugger.Break();
         }
     }

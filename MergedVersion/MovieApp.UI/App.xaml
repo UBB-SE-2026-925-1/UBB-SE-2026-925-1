@@ -21,6 +21,7 @@
             <converters:NegativeBooleanConverter x:Key="NegativeBooleanConverter" />
             <converters:NullableIntToVisibilityConverter x:Key="NullableIntToVisibilityConverter" />
             <converters:StringNotEmptyToBoolConverter x:Key="StringNotEmptyToBoolConverter" />
+            <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter" />
 
             <Style x:Key="SurfaceCardStyle" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
