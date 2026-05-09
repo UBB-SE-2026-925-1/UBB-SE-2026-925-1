@@ -12,6 +12,15 @@ using System;
 public sealed class LeaderboardEntry
 {
     /// <summary>
+    /// Initializes a new instance of the <see cref="LeaderboardEntry"/> class.
+    /// This constructor is required for XAML infrastructure.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    public LeaderboardEntry()
+    {
+    }
+
+    /// <summary>
     /// Gets the unique identifier of the user.
     /// </summary>
     required public int UserId { get; init; }
