@@ -103,6 +103,7 @@ public sealed class MyEventsViewModel : EventListPageViewModel
         try
         {
             int eventId = this.SelectedEvent.Id;
+
             await this.attendanceRepository.CancelAttendanceAsync(App.CurrentUserId, eventId);
 
             if (this.eventRepository is not null)
@@ -114,7 +115,9 @@ public sealed class MyEventsViewModel : EventListPageViewModel
                 }
             }
 
+            this.joinedIds.Remove(eventId);
             this.SelectedEvent = null;
+
             await this.InitializeAsync();
         }
         catch (Exception ex)
@@ -246,13 +249,15 @@ public sealed class MyEventsViewModel : EventListPageViewModel
         }
 
         int userId = App.CurrentUserId;
+
         var ids = await this.attendanceRepository.GetJoinedEventIdsAsync(userId);
         this.joinedIds = new HashSet<int>(ids);
-        
+
         var allEvents = await this.eventRepository.GetAllAsync();
 
-        return allEvents.Where(e => this.joinedIds.Contains(e.Id) || e.CreatorUserId == userId).ToList();
+        return allEvents
+            .Where(e => this.joinedIds.Contains(e.Id) || e.CreatorUserId == userId)
+            .ToList();
     }
 
-    private string GetWatchlistFolderPath() => string.Empty; // No longer needed
 }

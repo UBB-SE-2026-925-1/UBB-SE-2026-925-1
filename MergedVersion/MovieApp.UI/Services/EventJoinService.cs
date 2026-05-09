@@ -40,13 +40,16 @@ public sealed class EventJoinService : IEventJoinService
             var ev = await App.Services.EventRepository.FindByIdAsync(eventId);
             if (ev is not null)
             {
-                await App.Services.EventRepository.UpdateEnrollmentAsync(eventId, ev.CurrentEnrollment + 1);
+                int newCount = ev.CurrentEnrollment + 1;
+                await App.Services.EventRepository.UpdateEnrollmentAsync(eventId, newCount);
+                ev.CurrentEnrollment = newCount;
             }
         }
 
         if (App.Services.SlotMachineService is not null)
         {
-            bool granted = await App.Services.SlotMachineService.GrantBonusSpinForEventParticipationAsync(user.Id);
+            bool granted = await App.Services.SlotMachineService
+                .GrantBonusSpinForEventParticipationAsync(user.Id);
             if (granted)
             {
                 return new JoinEventResult { Success = true, Message = $"{buttonTag} (+1 bonus spin)" };

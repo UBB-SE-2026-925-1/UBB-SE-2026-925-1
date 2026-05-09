@@ -221,7 +221,7 @@
                             Text="Capacity" />
                         <TextBlock
                             FontWeight="SemiBold"
-                            Text="{x:Bind CapacityText, Mode=OneTime}" />
+                            Text="{x:Bind CapacityText, Mode=OneWay}" />
                     </StackPanel>
                 </Grid>
 

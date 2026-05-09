@@ -537,6 +537,7 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
 
         if (result.Success)
         {
+            this.Model.CurrentEnrollment += 1;
             this.IsJoined = true;
             this.Bindings.Update();
         }
