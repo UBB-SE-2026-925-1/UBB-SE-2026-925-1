@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:MovieApp.UI.Controls"
     mc:Ignorable="d">
 
     <UserControl.Resources>
@@ -31,6 +32,10 @@
                 Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                 CornerRadius="8,8,0,0">
                 <Grid>
+                    <Image
+                        Source="{x:Bind Model.PosterUrl, Mode=OneWay}"
+                        Stretch="UniformToFill"
+                        Opacity="0.6" />
                     <StackPanel 
                         Orientation="Horizontal" 
                         HorizontalAlignment="Right" 
