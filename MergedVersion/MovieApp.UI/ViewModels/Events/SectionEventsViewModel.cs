@@ -83,16 +83,16 @@ public sealed class SectionEventsViewModel(IEventRepository? repository, Section
     /// </returns>
     private static bool MatchesSection(Event? @event, string groupingValue)
     {
-        if (@event is null || string.IsNullOrWhiteSpace(@event.EventType) || string.IsNullOrWhiteSpace(groupingValue))
+        if (@event is null || string.IsNullOrWhiteSpace(groupingValue))
         {
             return false;
         }
 
-        string? normalizedGroupingValue = groupingValue.Trim();
-        string? eventGroupingValue = @event.EventType.Trim();
+        string eventType = string.IsNullOrWhiteSpace(@event.EventType) ? "General" : @event.EventType.Trim();
+        string normalizedGroupingValue = groupingValue.Trim();
 
         return string.Equals(
-            eventGroupingValue,
+            eventType,
             normalizedGroupingValue,
             StringComparison.OrdinalIgnoreCase);
     }

@@ -259,15 +259,34 @@ public sealed class EventManagementViewModel : EventListPageViewModel
             return false;
         }
 
+        if (string.IsNullOrWhiteSpace(this.FormEventType))
+        {
+            error = "Please select an event type.";
+            return false;
+        }
+
         if (this.FormPrice < 0)
         {
             error = "Ticket price cannot be negative.";
             return false;
         }
 
+        if (this.FormCapacity <= 0)
+        {
+            error = "Capacity must be at least 1.";
+            return false;
+        }
+
         if (this.FormDate is null)
         {
             error = "Date is required.";
+            return false;
+        }
+
+        DateTime eventDate = this.FormDate.Value.Date + this.FormTime;
+        if (eventDate <= DateTime.Now)
+        {
+            error = "Event date must be in the future.";
             return false;
         }
 
@@ -296,7 +315,7 @@ public sealed class EventManagementViewModel : EventListPageViewModel
         DateTime date = this.FormDate!.Value.Date + this.FormTime;
         int currentUserId = App.Services.CurrentUserService?.CurrentUser.Id ?? 0;
 
-        Event newEvent = new ()
+        Event newEvent = new Event
         {
             Id = 0,
             Title = this.FormTitle.Trim(),
@@ -335,7 +354,7 @@ public sealed class EventManagementViewModel : EventListPageViewModel
         this.ValidationMessage = string.Empty;
         DateTime date = this.FormDate!.Value.Date + this.FormTime;
 
-        Event updated = new ()
+        Event updated = new Event
         {
             Id = this.SelectedEvent.Id,
             Title = this.FormTitle.Trim(),

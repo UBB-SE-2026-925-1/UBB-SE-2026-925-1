@@ -221,7 +221,7 @@ public abstract class EventListPageViewModel : ViewModelBase
     /// so that <see cref="VisibleEvents"/> raises a property change notification
     /// and the UI can refresh.
     /// </remarks>
-    public void RefreshVisibleEvents()
+    public virtual void RefreshVisibleEvents()
     {
         this.VisibleEvents = EventListTransformer.Apply(this.AllEvents, this.EventListState);
     }
