@@ -20,13 +20,13 @@ public sealed class CommentRepository : ICommentRepository
     public async Task<Comment?> GetByIdAsync(int id, CancellationToken ct = default)
         => await this.context.Comments
             .Include(c => c.Author)
-            .FirstOrDefaultAsync(c => c.AuthorId == id, ct);
+            .FirstOrDefaultAsync(c => c.MessageId == id, ct);
 
     public async Task<int> InsertAsync(Comment comment, CancellationToken ct = default)
     {
         this.context.Comments.Add(comment);
         await this.context.SaveChangesAsync(ct);
-        return comment.AuthorId;
+        return comment.MessageId;
     }
 
     public async Task<bool> UpdateAsync(Comment comment, CancellationToken ct = default)

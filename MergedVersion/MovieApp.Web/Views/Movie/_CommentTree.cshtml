@@ -1,0 +1,48 @@
+@model IEnumerable<MovieApp.Core.Models.Comment>
+
+@foreach (var comment in Model)
+{
+    <div class="mb-3">
+        <div class="d-flex gap-2 align-items-start">
+            <div class="flex-shrink-0">
+                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
+                     style="width:36px;height:36px;font-size:.85rem;">
+                    @((comment.Author?.Username ?? "?").Substring(0, 1).ToUpper())
+                </div>
+            </div>
+            <div class="flex-grow-1">
+                <div class="bg-light rounded p-3">
+                    <div class="d-flex justify-content-between">
+                        <strong class="small">@(comment.Author?.Username ?? $"User #{comment.AuthorDisplayId}")</strong>
+                        <small class="text-muted">@comment.CreatedAt.ToString("MMM d, yyyy HH:mm")</small>
+                    </div>
+                    <p class="mb-1 mt-1">@comment.Content</p>
+                    <button class="btn btn-link btn-sm p-0 text-muted"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#reply-@comment.MessageId"
+                            aria-expanded="false">
+                        ↩ Reply
+                    </button>
+                </div>
+
+                <div class="collapse mt-2" id="reply-@comment.MessageId">
+                    <form method="post" asp-action="AddReply" asp-controller="Movie">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="MovieId" value="@ViewBag.MovieId" />
+                        <input type="hidden" name="ParentCommentId" value="@comment.MessageId" />
+                        <textarea name="Content" class="form-control form-control-sm"
+                                  rows="2" placeholder="Write a reply…" maxlength="10000"></textarea>
+                        <button type="submit" class="btn btn-sm btn-primary mt-1">Post Reply</button>
+                    </form>
+                </div>
+
+                @if (comment.Replies.Any())
+                {
+                    <div class="mt-2 comment-thread">
+                        @await Html.PartialAsync("_CommentTree", comment.Replies)
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

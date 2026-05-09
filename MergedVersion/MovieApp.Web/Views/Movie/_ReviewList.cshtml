@@ -1,0 +1,101 @@
+@model IEnumerable<MovieApp.Core.Models.Review>
+
+@{
+    int starsFilled(float rating) => (int)Math.Round((double)rating);
+}
+
+@if (!Model.Any())
+{
+    <p class="text-muted fst-italic">No reviews yet. Be the first to review this movie!</p>
+}
+else
+{
+    foreach (var review in Model)
+    {
+        <div class="card review-card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <strong>@(review.User?.Username ?? $"User #{review.UserDisplayId}")</strong>
+                        <span class="ms-2">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <span class="@(i <= starsFilled(review.StarRating) ? "star-filled" : "star-empty")">★</span>
+                            }
+                            <small class="ms-1 text-muted">(@review.StarRating.ToString("F1"))</small>
+                        </span>
+                        @if (review.IsExtraReview)
+                        {
+                            <span class="badge bg-success ms-2">Detailed Review</span>
+                        }
+                    </div>
+                    <small class="text-muted">@review.CreatedAt.ToString("MMM d, yyyy")</small>
+                </div>
+                <p class="mt-2 mb-0">@review.Content</p>
+
+                @if (review.IsExtraReview)
+                {
+                    <div class="mt-3 pt-3 border-top">
+                        <div class="row g-2 text-center">
+                            @if (review.CinematographyRating > 0)
+                            {
+                                <div class="col-6 col-md-2">
+                                    <div class="small fw-bold">Cinematography</div>
+                                    <div class="badge bg-secondary">@review.CinematographyRating / 5</div>
+                                    @if (!string.IsNullOrEmpty(review.CinematographyText))
+                                    {
+                                        <p class="small mt-1 text-start">@review.CinematographyText</p>
+                                    }
+                                </div>
+                            }
+                            @if (review.ActingRating > 0)
+                            {
+                                <div class="col-6 col-md-2">
+                                    <div class="small fw-bold">Acting</div>
+                                    <div class="badge bg-secondary">@review.ActingRating / 5</div>
+                                    @if (!string.IsNullOrEmpty(review.ActingText))
+                                    {
+                                        <p class="small mt-1 text-start">@review.ActingText</p>
+                                    }
+                                </div>
+                            }
+                            @if (review.CgiRating > 0)
+                            {
+                                <div class="col-6 col-md-2">
+                                    <div class="small fw-bold">CGI</div>
+                                    <div class="badge bg-secondary">@review.CgiRating / 5</div>
+                                    @if (!string.IsNullOrEmpty(review.CgiText))
+                                    {
+                                        <p class="small mt-1 text-start">@review.CgiText</p>
+                                    }
+                                </div>
+                            }
+                            @if (review.PlotRating > 0)
+                            {
+                                <div class="col-6 col-md-2">
+                                    <div class="small fw-bold">Plot</div>
+                                    <div class="badge bg-secondary">@review.PlotRating / 5</div>
+                                    @if (!string.IsNullOrEmpty(review.PlotText))
+                                    {
+                                        <p class="small mt-1 text-start">@review.PlotText</p>
+                                    }
+                                </div>
+                            }
+                            @if (review.SoundRating > 0)
+                            {
+                                <div class="col-6 col-md-2">
+                                    <div class="small fw-bold">Sound</div>
+                                    <div class="badge bg-secondary">@review.SoundRating / 5</div>
+                                    @if (!string.IsNullOrEmpty(review.SoundText))
+                                    {
+                                        <p class="small mt-1 text-start">@review.SoundText</p>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
