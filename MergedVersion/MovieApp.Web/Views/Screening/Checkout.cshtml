@@ -7,8 +7,10 @@
 }
 
 <div class="container py-4">
-    <a asp-controller="Screening" asp-action="ForMovie" asp-route-id="@Model.Screening.MovieId" class="btn btn-link mb-3">
-        &laquo; Back to screenings
+    <a asp-controller="Screening" asp-action="ForMovie" asp-route-id="@Model.Screening.MovieId"
+       class="btn btn-outline-primary btn-sm mb-3 d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill shadow-sm">
+        <span aria-hidden="true" style="font-size:1.1em; line-height:1;">&larr;</span>
+        <span>Back to screenings</span>
     </a>
 
     <h2 class="mb-2">Book seats — <em>@movieTitle</em></h2>

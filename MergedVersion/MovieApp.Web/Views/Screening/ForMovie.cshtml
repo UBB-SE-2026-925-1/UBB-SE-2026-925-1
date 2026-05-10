@@ -5,8 +5,10 @@
 }
 
 <div class="container py-4">
-    <a asp-controller="Movie" asp-action="Detail" asp-route-id="@Model.Movie.Id" class="btn btn-link mb-3">
-        &laquo; Back to @Model.Movie.Title
+    <a asp-controller="Movie" asp-action="Detail" asp-route-id="@Model.Movie.Id"
+       class="btn btn-outline-primary btn-sm mb-3 d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill shadow-sm">
+        <span aria-hidden="true" style="font-size:1.1em; line-height:1;">&larr;</span>
+        <span>Back to <strong>@Model.Movie.Title</strong></span>
     </a>
 
     @if (TempData["StatusMessage"] is string status && !string.IsNullOrWhiteSpace(status))
