@@ -9,13 +9,24 @@ namespace MovieApp.WebAPI.Controllers;
 [Route("api/[controller]")]
 public class MoviesController : ControllerBase
 {
+    /// <summary>Smallest valid auto-generated comment identifier in the database. Used to distinguish a real parent reference from "not set".</summary>
+    private const int MinimumValidCommentId = 1;
+
     private readonly ICatalogService catalogService;
     private readonly IMovieRepository movieRepository;
+    private readonly IReviewService reviewService;
+    private readonly ICommentService commentService;
 
-    public MoviesController(ICatalogService catalogService, IMovieRepository movieRepository)
+    public MoviesController(
+        ICatalogService catalogService,
+        IMovieRepository movieRepository,
+        IReviewService reviewService,
+        ICommentService commentService)
     {
         this.catalogService = catalogService;
         this.movieRepository = movieRepository;
+        this.reviewService = reviewService;
+        this.commentService = commentService;
     }
 
     [HttpGet]
@@ -59,5 +70,80 @@ public class MoviesController : ControllerBase
     {
         var genres = await this.movieRepository.GetGenresAsync();
         return Ok(genres);
+    }
+
+    // ---- Reviews (nested routes per debugging plan: /api/movies/{movieId}/reviews) ----
+
+    [HttpGet("{movieId}/reviews")]
+    public async Task<ActionResult<IEnumerable<Review>>> GetReviewsForMovie(int movieId)
+    {
+        var reviewsForMovie = await this.reviewService.GetReviewsForMovieAsync(movieId);
+        return Ok(reviewsForMovie);
+    }
+
+    [HttpPost("{movieId}/reviews")]
+    public async Task<ActionResult<Review>> AddReviewForMovie(int movieId, [FromBody] AddReviewRequest request)
+    {
+        try
+        {
+            var createdReview = await this.reviewService.AddReviewAsync(request.UserId, movieId, request.Rating, request.Content);
+            return Ok(createdReview);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpGet("{movieId}/reviews/average")]
+    public async Task<ActionResult<double>> GetAverageRatingForMovie(int movieId)
+    {
+        var averageStarRating = await this.reviewService.GetAverageRatingAsync(movieId);
+        return Ok(averageStarRating);
+    }
+
+    // ---- Comments (nested routes per debugging plan: /api/movies/{movieId}/comments) ----
+
+    [HttpGet("{movieId}/comments")]
+    public async Task<ActionResult<IEnumerable<Comment>>> GetCommentsForMovie(int movieId)
+    {
+        var commentsForMovie = await this.commentService.GetCommentsForMovieAsync(movieId);
+        return Ok(commentsForMovie);
+    }
+
+    [HttpPost("{movieId}/comments")]
+    public async Task<ActionResult<Comment>> AddCommentForMovie(int movieId, [FromBody] AddCommentRequest request)
+    {
+        try
+        {
+            // ParentCommentId is optional — when present and well-formed we route through AddReplyAsync to support threaded replies.
+            bool isReplyToExistingComment =
+                request.ParentCommentId.HasValue &&
+                request.ParentCommentId.Value >= MinimumValidCommentId;
+
+            Comment createdComment = isReplyToExistingComment
+                ? await this.commentService.AddReplyAsync(request.UserId, request.ParentCommentId!.Value, request.Content)
+                : await this.commentService.AddCommentAsync(request.UserId, movieId, request.Content);
+
+            return Ok(createdComment);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    public class AddReviewRequest
+    {
+        public int UserId { get; set; }
+        public float Rating { get; set; }
+        public string Content { get; set; } = string.Empty;
+    }
+
+    public class AddCommentRequest
+    {
+        public int UserId { get; set; }
+        public string Content { get; set; } = string.Empty;
+        public int? ParentCommentId { get; set; }
     }
 }

@@ -14,6 +14,9 @@ using System.Linq;
 /// </summary>
 public class MovieDetailViewModel : ViewModelBase
 {
+    /// <summary>The smallest rating the StarSlider lets the user submit. Anything below this means "no rating chosen yet".</summary>
+    private const double MinimumValidStarRating = 0.5d;
+
     private readonly IReviewService reviewService;
     private readonly ICommentService commentService;
     private readonly IScreeningRepository screeningRepository;
@@ -22,7 +25,7 @@ public class MovieDetailViewModel : ViewModelBase
 
     private Movie? movie;
     private double averageRating;
-    private float newReviewRating;
+    private double newReviewRating;
     private string newReviewContent = string.Empty;
     private string newCommentContent = string.Empty;
     private bool hasUserReview;
@@ -122,8 +125,8 @@ public class MovieDetailViewModel : ViewModelBase
         set => SetProperty(ref averageRating, value);
     }
 
-    /// <summary>Gets or sets the new review star rating.</summary>
-    public float NewReviewRating
+    /// <summary>Gets or sets the new review star rating (0-5, half-step granularity from <see cref="MovieApp.UI.Views.Components.StarSlider"/>).</summary>
+    public double NewReviewRating
     {
         get => newReviewRating;
         set => SetProperty(ref newReviewRating, value);
@@ -304,12 +307,26 @@ public class MovieDetailViewModel : ViewModelBase
     {
         if (Movie == null) return;
 
+        if (NewReviewRating < MinimumValidStarRating)
+        {
+            StatusMessage = "Please choose a star rating before submitting.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(NewReviewContent))
+        {
+            StatusMessage = "Please write a short review before submitting.";
+            return;
+        }
+
         try
         {
-            await reviewService.AddReviewAsync(currentUserId, Movie.Id, NewReviewRating, NewReviewContent);
+            // IReviewService takes a float; the StarSlider produces double half-steps from MinimumValidStarRating up to 5.0.
+            float ratingForApi = (float)NewReviewRating;
+            await reviewService.AddReviewAsync(currentUserId, Movie.Id, ratingForApi, NewReviewContent);
             StatusMessage = "Review submitted successfully!";
             NewReviewContent = string.Empty;
-            NewReviewRating = 0;
+            NewReviewRating = 0d;
             await LoadMovieAsync(Movie);
         }
         catch (InvalidOperationException ex)
