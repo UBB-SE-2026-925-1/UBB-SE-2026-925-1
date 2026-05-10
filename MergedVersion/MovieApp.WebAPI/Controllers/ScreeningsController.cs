@@ -15,6 +15,14 @@ public class ScreeningsController : ControllerBase
         this.screeningRepository = screeningRepository;
     }
 
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<Screening>> GetById(int id)
+    {
+        var screening = await this.screeningRepository.GetByIdAsync(id);
+        if (screening is null) return NotFound();
+        return Ok(screening);
+    }
+
     [HttpGet("event/{eventId}")]
     public async Task<ActionResult<IEnumerable<Screening>>> GetByEvent(int eventId)
     {

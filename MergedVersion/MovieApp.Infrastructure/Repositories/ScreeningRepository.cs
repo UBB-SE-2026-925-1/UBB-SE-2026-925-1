@@ -13,6 +13,9 @@ public sealed class ScreeningRepository : IScreeningRepository
 
     public ScreeningRepository(MovieAppDbContext context) => this.context = context;
 
+    public async Task<Screening?> GetByIdAsync(int screeningId, CancellationToken ct = default)
+        => await this.context.Screenings.FirstOrDefaultAsync(s => s.Id == screeningId, ct);
+
     public async Task<IReadOnlyList<Screening>> GetByEventIdAsync(int eventId, CancellationToken ct = default)
         => await this.context.Screenings
             .Where(s => s.EventId == eventId)

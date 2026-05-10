@@ -15,6 +15,11 @@ using MovieApp.Core.Models;
 public interface IScreeningRepository
 {
     /// <summary>
+    /// Retrieves a single screening by its identifier, or null when not found.
+    /// </summary>
+    Task<Screening?> GetByIdAsync(int screeningId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Retrieves all screenings associated with a specific event.
     /// </summary>
     /// <param name="eventIdentifier">The unique identifier of the event.</param>

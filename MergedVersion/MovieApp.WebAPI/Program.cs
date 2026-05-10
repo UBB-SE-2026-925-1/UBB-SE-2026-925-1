@@ -42,6 +42,7 @@ builder.Services.AddScoped<IUserEventAttendanceRepository, UserEventAttendanceRe
 builder.Services.AddScoped<IUserSlotMachineStateRepository, UserSlotMachineStateRepository>();
 builder.Services.AddScoped<IPriceWatcherRepository, PriceWatcherRepository>();
 builder.Services.AddScoped<IUserMovieDiscountRepository, UserMovieDiscountRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
 // 3. Add Services
 builder.Services.AddScoped<ICatalogService, CatalogService>();
@@ -69,6 +70,12 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+});
+
 var app = builder.Build();
 
 // Seed Database
@@ -95,6 +102,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
 

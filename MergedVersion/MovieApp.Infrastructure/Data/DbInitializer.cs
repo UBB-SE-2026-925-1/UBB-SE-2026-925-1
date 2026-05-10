@@ -13,6 +13,30 @@ public static class DbInitializer
     {
         context.Database.EnsureCreated();
 
+        // Ensure SeatBookings table exists on databases created before this entity was added.
+        // EnsureCreated() does not add tables to an already-created schema.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'SeatBookings')
+BEGIN
+    CREATE TABLE [SeatBookings] (
+        [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        [ScreeningId] INT NOT NULL,
+        [UserId] INT NOT NULL,
+        [Row] INT NOT NULL,
+        [Column] INT NOT NULL,
+        [BookedAt] DATETIME2 NOT NULL,
+        CONSTRAINT [UQ_SeatBookings_Screening_Seat] UNIQUE ([ScreeningId], [Row], [Column])
+    );
+    CREATE INDEX [IX_SeatBookings_ScreeningId] ON [SeatBookings] ([ScreeningId]);
+END");
+        }
+        catch
+        {
+            // Non-fatal: if the provider doesn't support the IF block (e.g. tests with InMemory), ignore.
+        }
+
         // Smart seeding will handle duplicates/missing data below
 
         // 1. Seed Genres

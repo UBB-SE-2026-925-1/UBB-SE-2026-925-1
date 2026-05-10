@@ -57,6 +57,7 @@ public partial class App : Application
         services.AddScoped<IUserMovieDiscountRepository, RemoteUserMovieDiscountRepository>();
         services.AddScoped<IUserEventAttendanceRepository, RemoteUserEventAttendanceRepository>();
         services.AddScoped<IPriceWatcherRepository, RemotePriceWatcherRepository>();
+        services.AddScoped<IBookingRepository, RemoteBookingRepository>();
 
         // 3. Remote Services
         services.AddScoped<ICatalogService, RemoteCatalogService>();

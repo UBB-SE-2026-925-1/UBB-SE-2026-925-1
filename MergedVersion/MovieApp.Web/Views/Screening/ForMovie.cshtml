@@ -1,0 +1,55 @@
+@model MovieApp.Web.Models.ScreeningListViewModel
+@{
+    ViewData["Title"] = $"Screenings — {Model.Movie.Title}";
+    var en = System.Globalization.CultureInfo.GetCultureInfo("en-US");
+}
+
+<div class="container py-4">
+    <a asp-controller="Movie" asp-action="Detail" asp-route-id="@Model.Movie.Id" class="btn btn-link mb-3">
+        &laquo; Back to @Model.Movie.Title
+    </a>
+
+    @if (TempData["StatusMessage"] is string status && !string.IsNullOrWhiteSpace(status))
+    {
+        <div class="alert alert-success">@status</div>
+    }
+
+    <div class="d-flex align-items-center mb-4 gap-3">
+        @if (!string.IsNullOrWhiteSpace(Model.Movie.PosterUrl))
+        {
+            <img src="@Model.Movie.PosterUrl" alt="@Model.Movie.Title" style="height:120px; border-radius:8px;" />
+        }
+        <div>
+            <h2 class="mb-1">Screenings for <em>@Model.Movie.Title</em></h2>
+            <div class="text-muted">@Model.Screenings.Count screening(s) available</div>
+        </div>
+    </div>
+
+    @if (!Model.Screenings.Any())
+    {
+        <div class="alert alert-info">No screenings are scheduled for this movie yet.</div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var s in Model.Screenings)
+            {
+                <div class="col-md-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title mb-1">@s.ScreeningTime.ToString("ddd, dd MMM yyyy", en)</h5>
+                            <p class="card-text mb-3">
+                                <span class="fs-4 fw-semibold">@s.ScreeningTime.ToString("HH:mm", en)</span><br/>
+                                <small class="text-muted">Event #@s.EventId</small>
+                            </p>
+                            <a class="btn btn-primary mt-auto"
+                               asp-action="Checkout" asp-route-id="@s.Id">
+                                Book tickets
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
