@@ -12,8 +12,6 @@ namespace MovieApp.Web.Controllers;
 
 public class ScreeningController : Controller
 {
-    private const int Columns = 10;
-
     private readonly IScreeningRepository screeningRepository;
     private readonly IBookingRepository bookingRepository;
     private readonly ICatalogService catalogService;
@@ -111,24 +109,20 @@ public class ScreeningController : Controller
         var ev = await this.apiClient.GetAsync<Event>($"api/events/{screening.EventId}");
         var bookings = await this.bookingRepository.GetByScreeningAsync(screening.Id);
 
-        int capacity = ev?.MaxCapacity ?? 50;
-        int totalRows = (int)System.Math.Ceiling((double)capacity / Columns);
+        var (totalRows, totalColumns) = RoomLayout.For(screening.Id);
         var bookedSet = new HashSet<(int, int)>(bookings.Select(b => (b.Row, b.Column)));
 
         var seats = new List<SeatViewModel>();
-        int created = 0;
         for (int row = 1; row <= totalRows; row++)
         {
-            for (int col = 1; col <= Columns; col++)
+            for (int col = 1; col <= totalColumns; col++)
             {
-                if (created >= capacity) break;
                 seats.Add(new SeatViewModel
                 {
                     Row = row,
                     Column = col,
                     IsBooked = bookedSet.Contains((row, col)),
                 });
-                created++;
             }
         }
 
@@ -139,7 +133,7 @@ public class ScreeningController : Controller
             Event = ev,
             Seats = seats,
             TotalRows = totalRows,
-            TotalColumns = Columns,
+            TotalColumns = totalColumns,
             StatusMessage = statusMessage,
         };
 

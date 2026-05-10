@@ -367,7 +367,8 @@ public sealed class DetailsCheckoutViewModel : ViewModels.ViewModelBase
             }
         }
 
-        this.seatGuide = new SeatGuideViewModel(this.CurrentEvent.MaxCapacity, booked);
+        var (rows, cols) = RoomLayout.For(this.SelectedScreening?.Id ?? 0);
+        this.seatGuide = new SeatGuideViewModel(rows, cols, booked);
         this.seatGuide.RestoreSelection(this.confirmedSelection);
         return this.seatGuide;
     }

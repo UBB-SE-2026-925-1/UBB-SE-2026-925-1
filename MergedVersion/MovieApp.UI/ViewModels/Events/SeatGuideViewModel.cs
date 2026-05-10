@@ -45,6 +45,19 @@ public sealed class SeatGuideViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Initializes a new instance with explicit room dimensions and the actual booked seats marked unavailable.
+    /// </summary>
+    /// <param name="totalRows">Number of rows in the room.</param>
+    /// <param name="totalColumns">Number of seats per row.</param>
+    /// <param name="bookedSeats">A set of (row, column) tuples that are already booked.</param>
+    public SeatGuideViewModel(int totalRows, int totalColumns, IReadOnlyCollection<(int Row, int Column)>? bookedSeats)
+    {
+        if (totalRows <= 0) totalRows = RoomLayout.MinRows;
+        if (totalColumns <= 0) totalColumns = RoomLayout.MinColumns;
+        this.GenerateLayoutForRoom(totalRows, totalColumns, bookedSeats ?? Array.Empty<(int, int)>());
+    }
+
+    /// <summary>
     /// Gets the collection of seats generated for the layout.
     /// </summary>
     public ObservableCollection<Seat> Seats { get; } = new ObservableCollection<Seat>();
@@ -102,6 +115,53 @@ public sealed class SeatGuideViewModel : ViewModelBase
         }
 
         this.SelectedCount = 0;
+    }
+
+    private void GenerateLayoutForRoom(int totalRows, int totalColumns, IReadOnlyCollection<(int Row, int Column)> bookedSeats)
+    {
+        this.Seats.Clear();
+        this.SelectedCount = 0;
+
+        this.TotalColumns = totalColumns;
+        this.TotalRows = totalRows;
+
+        int centerRow = (this.TotalRows / 2) + 1;
+        int centerColumn = this.TotalColumns / 2;
+
+        var booked = new HashSet<(int, int)>(bookedSeats);
+
+        for (int row = 1; row <= this.TotalRows; row++)
+        {
+            for (int column = 1; column <= this.TotalColumns; column++)
+            {
+                Seat seat = new Seat { Row = row, Column = column };
+
+                if (row <= 2 && this.TotalRows > 3)
+                {
+                    seat.Quality = SeatQuality.Poor;
+                }
+                else if (row == 1 && this.TotalRows <= 3)
+                {
+                    seat.Quality = SeatQuality.Poor;
+                }
+                else if (Math.Abs(row - centerRow) <= 1 && Math.Abs(column - centerColumn) <= 1)
+                {
+                    seat.Quality = SeatQuality.Optimal;
+                    seat.IsSweetSpot = true;
+                }
+                else
+                {
+                    seat.Quality = SeatQuality.Standard;
+                }
+
+                if (booked.Contains((row, column)))
+                {
+                    seat.IsAvailable = false;
+                }
+
+                this.Seats.Add(seat);
+            }
+        }
     }
 
     private void GenerateLayout(int capacity, IReadOnlyCollection<(int Row, int Column)> bookedSeats)

@@ -160,6 +160,41 @@ END");
             await context.SaveChangesAsync();
         }
 
+        // 4.6 Seed Screenings — 3 future showtimes per movie, distributed across the available events.
+        var allMoviesForScreenings = await context.Movies.ToListAsync();
+        var allEventsForScreenings = await context.Events.OrderBy(e => e.Id).ToListAsync();
+        if (allMoviesForScreenings.Any() && allEventsForScreenings.Any())
+        {
+            var rng = new Random(42);
+            var baseDate = DateTime.Now.Date.AddHours(19); // 7 PM today as anchor
+            int eventCursor = 0;
+
+            foreach (var m in allMoviesForScreenings)
+            {
+                int existing = await context.Screenings.CountAsync(s => s.MovieId == m.Id);
+                if (existing >= 3) continue;
+
+                int toCreate = 3 - existing;
+                for (int i = 0; i < toCreate; i++)
+                {
+                    var ev = allEventsForScreenings[eventCursor % allEventsForScreenings.Count];
+                    eventCursor++;
+
+                    int dayOffset = 1 + (existing + i) * 2 + rng.Next(0, 2);
+                    int hourOffset = rng.Next(0, 4); // 19:00 .. 22:00
+
+                    context.Screenings.Add(new Screening
+                    {
+                        Id = 0,
+                        MovieId = m.Id,
+                        EventId = ev.Id,
+                        ScreeningTime = baseDate.AddDays(dayOffset).AddHours(hourOffset),
+                    });
+                }
+            }
+            await context.SaveChangesAsync();
+        }
+
         // 5. Seed Badges (Team B)
         if (!await context.Badges.AnyAsync())
         {
