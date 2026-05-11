@@ -30,10 +30,9 @@
       <Deploy Solution="Release|x64" />
     </Project>
   </Folder>
-  <Folder Name="/tests/" />
-  <Folder Name="/tests/MovieApp.Core.Tests/" />
-  <Folder Name="/tests/MovieApp.Infrastructure.Tests/" />
-  <Folder Name="/tests/MovieApp.UI.Tests/" />
+  <Folder Name="/tests/">
+    <Project Path="tests/MovieApp.Core.Tests/MovieApp.Core.Tests.csproj" />
+  </Folder>
   <Project Path="MovieApp.WebAPI/MovieApp.WebAPI.csproj">
     <BuildDependency Project="MovieApp.UI/MovieApp.UI.csproj" />
     <Platform Solution="Debug|Any CPU" Project="x64" />

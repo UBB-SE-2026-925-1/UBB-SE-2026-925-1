@@ -63,7 +63,7 @@ public sealed class CatalogService : ICatalogService
         {
             // Logic updated for unified many-to-many Genres collection
             var genreNames = genres.Select(g => g.Name).ToList();
-            filtered = filtered.Where(m => m.Genres.Any(mg => genreNames.Contains(mg.Name)));
+            filtered = filtered.Where(m => m.Genres.Any(mg => genreNames.Contains(mg.Name, StringComparer.OrdinalIgnoreCase)));
         }
 
         return filtered
