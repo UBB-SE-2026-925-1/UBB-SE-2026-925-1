@@ -13,7 +13,10 @@ builder.Services.AddMemoryCache();
 var apiBaseUrl = builder.Configuration["WebApi:BaseUrl"] ?? "http://localhost:5207";
 
 builder.Services.AddHttpClient("MovieApi", client =>
-    client.BaseAddress = new Uri(apiBaseUrl));
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(10); // fail fast so pages show error banner instead of hanging
+});
 
 // ApiClient is scoped so each request gets its own instance (important for
 // per-request Bearer token injection once Person 2's JWT flow is wired in).

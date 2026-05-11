@@ -37,6 +37,21 @@ END");
             // Non-fatal: if the provider doesn't support the IF block (e.g. tests with InMemory), ignore.
         }
 
+        // Ensure the Description column exists on Badges (added after initial schema creation).
+        // EnsureCreated() does not add columns to an already-created table.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'Badges') AND name = N'Description')
+BEGIN
+    ALTER TABLE [Badges] ADD [Description] nvarchar(max) NOT NULL DEFAULT N'';
+END");
+        }
+        catch
+        {
+            // Non-fatal: ignore if provider doesn't support raw SQL (e.g. tests with InMemory).
+        }
+
         // Smart seeding will handle duplicates/missing data below
 
         // 1. Seed Genres
