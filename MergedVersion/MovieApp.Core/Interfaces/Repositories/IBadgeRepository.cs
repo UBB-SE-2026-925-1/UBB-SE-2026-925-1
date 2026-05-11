@@ -1,6 +1,8 @@
 using System.Threading;
 using System.Threading.Tasks;
+using MovieApp.Core.DTOs;
 using MovieApp.Core.Models;
+using MovieApp.WebAPI.Controllers.DTOs;
 
 namespace MovieApp.Core.Interfaces.Repository;
 
@@ -23,5 +25,7 @@ public interface IBadgeRepository
 
     /// <summary>Deletes a badge definition from the system.</summary>
     Task<bool> DeleteAsync(int id, CancellationToken ct = default);
+
+    Task<List<BadgeDTO>> GetBadgesForUserAsync(int userId, CancellationToken ct = default);
 }
 

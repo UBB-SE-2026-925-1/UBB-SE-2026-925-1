@@ -3,6 +3,7 @@ using MovieApp.Core.Interfaces.Service;
 using MovieApp.Core.Models;
 using MovieApp.Core.Repositories;
 using MovieApp.Core.Services;
+using MovieApp.WebAPI.Controllers.DTOs;
 
 namespace MovieApp.WebAPI.Controllers;
 
@@ -29,10 +30,10 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
-    [HttpGet("{id}/stats")]
-    public async Task<ActionResult<UserStats>> GetUserStats(int id)
+    [HttpGet("{userId}/stats")]
+    public async Task<ActionResult<UserStats>> GetUserStats(int userId)
     {
-        var stats = await this.pointService.GetUserStatsAsync(id);
+        var stats = await this.pointService.GetUserStatsAsync(userId);
         return Ok(stats);
     }
 
@@ -43,10 +44,10 @@ public class UsersController : ControllerBase
         return Ok(badges);
     }
 
-    [HttpGet("{id}/badges")]
-    public async Task<ActionResult<IEnumerable<Badge>>> GetUserBadges(int id)
+    [HttpGet("{userId}/badges")]
+    public async Task<ActionResult<IEnumerable<UserBadgesDTO>>> GetUserBadges(int userId)
     {
-        var badges = await this.badgeService.GetUserBadgesAsync(id);
+        var badges = await this.badgeService.GetUserBadgesAsync(userId);
         return Ok(badges);
     }
 }

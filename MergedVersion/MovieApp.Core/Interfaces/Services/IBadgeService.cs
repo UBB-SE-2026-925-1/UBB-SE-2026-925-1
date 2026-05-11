@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 #nullable enable
 
 using MovieApp.Core.Models;
+using MovieApp.WebAPI.Controllers.DTOs;
+
 
 namespace MovieApp.Core.Interfaces.Service;
 
@@ -17,7 +19,7 @@ public interface IBadgeService
     /// <param name="userId">The unique identifier of the user.</param>
     /// <param name="ct">A token to monitor for cancellation requests.</param>
     /// <returns>A list of badges the user has earned.</returns>
-    Task<List<Badge>> GetUserBadgesAsync(int userId, CancellationToken ct = default);
+    Task<UserBadgesDTO> GetUserBadgesAsync(int userId, CancellationToken ct = default);
 
     /// <summary>
     /// Retrieves all available badges defined in the system.

@@ -1,11 +1,14 @@
 using System.Threading;
 using System.Threading.Tasks;
+using MovieApp.Core.DTOs;
+
 #nullable enable
 
 using MovieApp.Core.Interfaces.Repository;
 using MovieApp.Core.Interfaces.Service;
 using MovieApp.Core.Models;
 using MovieApp.Core.Repositories;
+using MovieApp.WebAPI.Controllers.DTOs;
 
 namespace MovieApp.Core.Services;
 
@@ -39,14 +42,24 @@ public sealed class BadgeService : IBadgeService
     }
 
     /// <inheritdoc/>
-    public async Task<List<Badge>> GetUserBadgesAsync(int userId, CancellationToken ct = default)
+    public async Task<UserBadgesDTO> GetUserBadgesAsync(
+    int userId,
+    CancellationToken ct = default)
     {
-        var associations = await this.userBadgeRepository.GetAllAsync(ct);
+        var badges = await this.badgeRepository
+            .GetBadgesForUserAsync(userId, ct);
 
-        return associations
-            .Where(ub => ub.User != null && ub.User.Id == userId && ub.Badge != null)
-            .Select(ub => ub.Badge!)
-            .ToList();
+        return new UserBadgesDTO
+        {
+            UserId = userId,
+            Badges = badges.Select(b => new BadgeDTO
+            {
+                BadgeId = b.BadgeId,
+                Name = b.Name,
+                Description = b.Description,
+                CriteriaValue = b.CriteriaValue
+            }).ToList()
+        };
     }
 
     /// <inheritdoc/>

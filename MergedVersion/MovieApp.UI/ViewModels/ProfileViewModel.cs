@@ -81,7 +81,7 @@ public class ProfileViewModel : ViewModelBase
 
         var allBadges = await badgeService.GetAllBadgesAsync();
         var userBadges = await badgeService.GetUserBadgesAsync(currentUserId);
-        var earnedIds = new HashSet<int>(userBadges.Select(b => b.BadgeId));
+        var earnedIds = new HashSet<int>(userBadges.Badges.Select(b => b.BadgeId));
 
         Username = currentUserService.CurrentUser.Username;
 
