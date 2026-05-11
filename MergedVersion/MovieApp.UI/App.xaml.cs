@@ -6,7 +6,6 @@ using MovieApp.UI.ViewModels;
 using MovieApp.Core.Repositories;
 using MovieApp.Core.Interfaces.Service;
 using MovieApp.UI.Services;
-using MovieApp.UI.Services.Api;
 using MovieApp.UI.ViewModels.Events;
 using System.Net.Http;
 using MovieApp.Proxy;
@@ -174,6 +173,7 @@ public partial class App : Application
             var currentUserService = ServiceProvider.GetRequiredService<ICurrentUserService>();
             await currentUserService.InitializeAsync();
             CurrentUserId = currentUserService.CurrentUser.Id;
+            MovieApp.Proxy.IdentityConfig.CurrentUserId = CurrentUserId;
             System.Diagnostics.Debug.WriteLine($">>> User '{currentUserService.CurrentUser.Username}' (ID: {CurrentUserId}) loaded.");
 
             System.Diagnostics.Debug.WriteLine(">>> Checking slot machine login streaks...");

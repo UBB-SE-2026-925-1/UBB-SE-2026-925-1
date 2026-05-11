@@ -1,12 +1,12 @@
+﻿using MovieApp.Core.Models;
+using MovieApp.Core.Repositories;
 using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-using MovieApp.Core.Models;
-using MovieApp.Core.Repositories;
 
-namespace MovieApp.UI.Services.Api;
-
+namespace MovieApp.Proxy;
 public class RemotePriceWatcherRepository : IPriceWatcherRepository
 {
     private readonly ApiClient apiClient;
@@ -42,3 +42,4 @@ public class RemotePriceWatcherRepository : IPriceWatcherRepository
         return await this.apiClient.GetAsync<bool>($"api/pricewatcher/check/{eventIdentifier}");
     }
 }
+
