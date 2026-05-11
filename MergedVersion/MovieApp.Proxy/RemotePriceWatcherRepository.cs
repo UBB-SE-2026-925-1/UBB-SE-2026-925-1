@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using MovieApp.Core.Models;
 using MovieApp.Core.Repositories;
 
-namespace MovieApp.UI.Services.Api;
+namespace MovieApp.Proxy;
 
 public class RemotePriceWatcherRepository : IPriceWatcherRepository
 {

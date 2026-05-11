@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using MovieApp.Core.Interfaces.Service;
 using MovieApp.Core.Models;
 
-namespace MovieApp.UI.Services.Api;
+namespace MovieApp.Proxy;
 
 public class RemoteBattleService : IBattleService
 {

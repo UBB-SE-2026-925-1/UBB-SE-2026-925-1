@@ -57,6 +57,7 @@
   <ItemGroup>
     <ProjectReference Include="..\MovieApp.Core\MovieApp.Core.csproj" />
     <ProjectReference Include="..\MovieApp.Infrastructure\MovieApp.Infrastructure.csproj" />
+    <ProjectReference Include="..\MovieApp.Proxy\MovieApp.Proxy.csproj" />
   </ItemGroup>
 
   <ItemGroup>
