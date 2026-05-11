@@ -82,7 +82,7 @@ public sealed partial class HomePage : Page
                     throw new NullReferenceException("Ambassador repository is not initalized.");
                 }
 
-                User currentUser = App.Services.CurrentUserService!.CurrentUser;
+                var currentUser = App.Services.CurrentUserService!.CurrentUser;
                 string? existingCode =
                     await App.Services.AmbassadorRepository.GetReferralCodeAsync(currentUser.Id);
                 if (string.IsNullOrEmpty(existingCode))

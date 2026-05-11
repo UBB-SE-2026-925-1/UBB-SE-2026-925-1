@@ -99,7 +99,7 @@ public sealed class EventDialogContentBuilder
             model.RegularDiscountedPriceText = $"Your price: {EventCard.GetDiscountedPriceText(movieEvent, CultureInfo.CurrentCulture, discountPercent.Value)}";
         }
 
-        User? currentUser = this.currentUserService?.CurrentUser;
+        var currentUser = this.currentUserService?.CurrentUser;
 
         if (App.Services.AmbassadorRepository is not null && currentUser is not null)
         {

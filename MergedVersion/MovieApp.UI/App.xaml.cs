@@ -9,6 +9,7 @@ using MovieApp.UI.Services;
 using MovieApp.UI.Services.Api;
 using MovieApp.UI.ViewModels.Events;
 using System.Net.Http;
+using MovieApp.Proxy;
 
 namespace MovieApp.UI;
 

@@ -24,11 +24,23 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("current")]
-    public async Task<ActionResult<User>> GetCurrentUser()
+    public async Task<ActionResult<CurrentUserDTO>> GetCurrentUser()
     {
-        var user = await this.userRepository.FindByAuthIdentityAsync("Seed", "Admin");
-        if (user == null) return NotFound();
-        return Ok(user);
+        var user = await this.userRepository
+            .FindByAuthIdentityAsync("Seed", "Admin");
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(new CurrentUserDTO
+        {
+            Id = user.Id,
+            Username = user.Username,
+            TotalPoints = user.UserStats?.TotalPoints ?? 0,
+            WeeklyScore = user.UserStats?.WeeklyScore ?? 0
+        });
     }
 
     [HttpGet("{userId}/stats")]
