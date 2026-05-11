@@ -6,6 +6,7 @@ using MovieApp.Proxy;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
 
 // ── HTTP client ──────────────────────────────────────────────────────────────
 var apiBaseUrl = builder.Configuration["WebApi:BaseUrl"] ?? "http://localhost:5207";
