@@ -16,6 +16,7 @@ public sealed class MyEventsViewModel : EventListPageViewModel
     private readonly IPriceWatcherRepository priceWatcherRepository;
     private readonly IEventRepository? eventRepository;
     private readonly IUserEventAttendanceRepository? attendanceRepository;
+    private HashSet<int> joinedIds = new();
     private WatchedEvent? selectedWatchedEvent;
     private double selectedTargetPrice;
 
@@ -75,7 +76,7 @@ public sealed class MyEventsViewModel : EventListPageViewModel
     {
         if (this.SelectedEvent == null || this.eventRepository == null) return;
         
-        Event updated = new()
+        Event updated = new Event
         {
             Id = this.SelectedEvent.Id,
             Title = this.FormTitle,
@@ -98,9 +99,31 @@ public sealed class MyEventsViewModel : EventListPageViewModel
     private async Task CancelParticipationAsync()
     {
         if (this.SelectedEvent == null || this.attendanceRepository == null) return;
-        
-        await this.attendanceRepository.CancelAttendanceAsync(App.CurrentUserId, this.SelectedEvent.Id);
-        await this.InitializeAsync();
+
+        try
+        {
+            int eventId = this.SelectedEvent.Id;
+
+            await this.attendanceRepository.CancelAttendanceAsync(App.CurrentUserId, eventId);
+
+            if (this.eventRepository is not null)
+            {
+                var ev = await this.eventRepository.FindByIdAsync(eventId);
+                if (ev is not null && ev.CurrentEnrollment > 0)
+                {
+                    await this.eventRepository.UpdateEnrollmentAsync(eventId, ev.CurrentEnrollment - 1);
+                }
+            }
+
+            this.joinedIds.Remove(eventId);
+            this.SelectedEvent = null;
+
+            await this.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"CancelParticipation error: {ex.Message}");
+        }
     }
 
     private async Task DeleteEventAsync()
@@ -113,6 +136,25 @@ public sealed class MyEventsViewModel : EventListPageViewModel
 
     /// <inheritdoc/>
     public override string PageTitle => "My Events";
+
+    /// <inheritdoc/>
+    public override void RefreshVisibleEvents()
+    {
+        base.RefreshVisibleEvents();
+        this.RefreshFilteredCollections();
+        this.OnPropertyChanged(nameof(this.VisibleCreatedEvents));
+        this.OnPropertyChanged(nameof(this.VisibleJoinedEvents));
+    }
+
+    public IEnumerable<Event> VisibleCreatedEvents => 
+        this.VisibleEvents.Where(e => e.CreatorUserId == App.CurrentUserId);
+
+    public IEnumerable<Event> VisibleJoinedEvents => 
+        this.VisibleEvents.Where(e => this.joinedIds.Contains(e.Id));
+
+    public ObservableCollection<Event> CreatedEvents { get; } = new ();
+
+    public ObservableCollection<Event> JoinedEvents { get; } = new ();
 
     /// <summary>
     /// Gets the collection of events watched by the user.
@@ -181,6 +223,23 @@ public sealed class MyEventsViewModel : EventListPageViewModel
         }
     }
 
+    public void RefreshFilteredCollections()
+    {
+        int userId = App.CurrentUserId;
+        
+        this.CreatedEvents.Clear();
+        foreach (var e in this.AllEvents.Where(e => e.CreatorUserId == userId))
+        {
+            this.CreatedEvents.Add(e);
+        }
+
+        this.JoinedEvents.Clear();
+        foreach (var e in this.AllEvents.Where(e => this.joinedIds.Contains(e.Id)))
+        {
+            this.JoinedEvents.Add(e);
+        }
+    }
+
     /// <inheritdoc/>
     protected override async Task<IReadOnlyList<Event>> LoadEventsAsync()
     {
@@ -190,12 +249,15 @@ public sealed class MyEventsViewModel : EventListPageViewModel
         }
 
         int userId = App.CurrentUserId;
-        var joinedIds = await this.attendanceRepository.GetJoinedEventIdsAsync(userId);
+
+        var ids = await this.attendanceRepository.GetJoinedEventIdsAsync(userId);
+        this.joinedIds = new HashSet<int>(ids);
+
         var allEvents = await this.eventRepository.GetAllAsync();
 
-        var myEvents = allEvents.Where(e => joinedIds.Contains(e.Id) || e.CreatorUserId == userId).ToList();
-        return myEvents;
+        return allEvents
+            .Where(e => this.joinedIds.Contains(e.Id) || e.CreatorUserId == userId)
+            .ToList();
     }
 
-    private string GetWatchlistFolderPath() => string.Empty; // No longer needed
 }

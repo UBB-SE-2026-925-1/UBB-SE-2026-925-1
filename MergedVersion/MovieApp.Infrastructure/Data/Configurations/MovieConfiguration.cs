@@ -25,10 +25,6 @@ public sealed class MovieConfiguration : IEntityTypeConfiguration<Movie>
         // 4. One-to-Many Relationships
         // Ensuring that when a movie is deleted, its reviews and comments are handled
 
-        builder.HasMany(m => m.Reviews)
-            .WithOne(r => r.Movie)
-            .OnDelete(DeleteBehavior.Cascade);
-
         builder.HasMany(m => m.Comments)
             .WithOne(c => c.Movie)
             .OnDelete(DeleteBehavior.Cascade);
@@ -85,10 +81,10 @@ public sealed class MovieConfiguration : IEntityTypeConfiguration<Movie>
                     );
                 });
 
-        // 7. Seed Reviews (to populate AverageRating)
+        // 4b. Reviews one-to-many with explicit FK (shadow property)
         builder.HasMany(m => m.Reviews)
             .WithOne(r => r.Movie)
-            .HasForeignKey("MovieId") // Ensure FK is correct
+            .HasForeignKey("MovieId")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(m => m.Actors)

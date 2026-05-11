@@ -14,6 +14,10 @@ namespace MovieApp.Core.Services;
 /// </summary>
 public sealed class CommentService : ICommentService
 {
+    /// <summary>Maximum number of characters allowed in a single comment or reply.
+    /// Mirrors the database column length defined in CommentConfiguration.</summary>
+    private const int MaxCommentContentLength = 10000;
+
     private readonly ICommentRepository commentRepository;
     private readonly IUserRepository userRepository;
     private readonly IMovieRepository movieRepository;
@@ -33,7 +37,7 @@ public sealed class CommentService : ICommentService
     {
         var allComments = await this.commentRepository.GetAllAsync(ct);
         return allComments
-            .Where(c => c.Movie?.Id == movieId)
+            .Where(c => c.MovieId == movieId)
             .OrderByDescending(c => c.CreatedAt)
             .ToList();
     }
@@ -41,22 +45,28 @@ public sealed class CommentService : ICommentService
     /// <inheritdoc/>
     public async Task<Comment> AddCommentAsync(int userId, int movieId, string content, CancellationToken ct = default)
     {
-        if (content.Length > 10000)
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new InvalidOperationException("Comment content cannot be empty.");
+        }
+
+        if (content.Length > MaxCommentContentLength)
         {
             throw new InvalidOperationException("Comment content exceeds maximum length.");
         }
 
-        var author = await this.userRepository.GetByIdAsync(userId, ct)
+        // Validate the user and movie exist before inserting
+        var existingAuthor = await this.userRepository.GetByIdAsync(userId, ct)
             ?? throw new InvalidOperationException("User not found.");
-        var movie = await this.movieRepository.GetByIdAsync(movieId, ct)
+        var existingMovie = await this.movieRepository.GetByIdAsync(movieId, ct)
             ?? throw new InvalidOperationException("Movie not found.");
 
         var comment = new Comment
         {
-            Author = author,
-            Movie = movie,
+            AuthorId = existingAuthor.Id,
+            MovieId = existingMovie.Id,
             Content = content,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         await this.commentRepository.InsertAsync(comment, ct);
@@ -66,19 +76,31 @@ public sealed class CommentService : ICommentService
     /// <inheritdoc/>
     public async Task<Comment> AddReplyAsync(int userId, int parentCommentId, string content, CancellationToken ct = default)
     {
-        var parent = await this.commentRepository.GetByIdAsync(parentCommentId, ct)
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new InvalidOperationException("Reply content cannot be empty.");
+        }
+
+        if (content.Length > MaxCommentContentLength)
+        {
+            throw new InvalidOperationException("Reply content exceeds maximum length.");
+        }
+
+        var parentComment = await this.commentRepository.GetByIdAsync(parentCommentId, ct)
             ?? throw new InvalidOperationException("Parent comment not found.");
 
-        var author = await this.userRepository.GetByIdAsync(userId, ct)
+        var existingAuthor = await this.userRepository.GetByIdAsync(userId, ct)
             ?? throw new InvalidOperationException("User not found.");
 
+        // Inherit the parent's MovieId so replies always live under the same movie thread,
+        // even when navigation properties weren't loaded.
         var reply = new Comment
         {
-            Author = author,
-            Movie = parent.Movie,
+            AuthorId = existingAuthor.Id,
+            MovieId = parentComment.MovieId,
+            ParentCommentId = parentComment.MessageId,
             Content = content,
             CreatedAt = DateTime.UtcNow,
-            ParentComment = parent
         };
 
         await this.commentRepository.InsertAsync(reply, ct);

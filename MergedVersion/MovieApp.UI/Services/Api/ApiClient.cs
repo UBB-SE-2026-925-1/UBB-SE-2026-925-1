@@ -57,10 +57,9 @@ public class ApiClient
 
                 return JsonSerializer.Deserialize<T>(contentString, this.jsonOptions);
             }
-            catch (JsonException)
+            catch (JsonException ex)
             {
-                // If it's explicitly a JSON parsing error on a 200 OK, don't retry, just return default or throw.
-                // We return default assuming the endpoint had nothing to return.
+                System.Diagnostics.Debug.WriteLine($"[ApiClient] JSON deserialization failed for {endpoint}: {ex.Message}");
                 return default;
             }
             catch (Exception) when (retryCount < maxRetries)

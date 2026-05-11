@@ -74,7 +74,6 @@ public sealed partial class MainWindow : Window
 
             case "Home":
                 var homeView = new HomePage();
-                homeView.DataContext = App.ServiceProvider.GetRequiredService<MovieApp.UI.ViewModels.Events.HomeEventsViewModel>();
                 view = homeView;
                 break;
 

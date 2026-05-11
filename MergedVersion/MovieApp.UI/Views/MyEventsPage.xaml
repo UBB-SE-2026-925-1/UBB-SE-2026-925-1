@@ -52,7 +52,7 @@
 
                         <Border Style="{StaticResource SurfaceCardStyle}">
                             <ListView Height="420"
-                                      ItemsSource="{x:Bind ViewModel.VisibleEvents, Mode=OneWay}"
+                                      ItemsSource="{x:Bind ViewModel.CreatedEvents, Mode=OneWay}"
                                       SelectedItem="{x:Bind ViewModel.SelectedEvent, Mode=TwoWay}">
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="models:Event">
@@ -87,7 +87,7 @@
 
                         <Border Style="{StaticResource SurfaceCardStyle}">
                             <ListView Height="420"
-                                      ItemsSource="{x:Bind ViewModel.VisibleEvents, Mode=OneWay}"
+                                      ItemsSource="{x:Bind ViewModel.JoinedEvents, Mode=OneWay}"
                                       SelectedItem="{x:Bind ViewModel.SelectedEvent, Mode=TwoWay}">
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="models:Event">

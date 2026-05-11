@@ -1,3 +1,4 @@
+<<<<<<< P6_Screenings_and_Checkout
 using System;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -23,8 +24,36 @@ public sealed class StringToImageSourceConverter : IValueConverter
         }
 
         return new BitmapImage(uri);
+=======
+﻿namespace MovieApp.UI.Converters;
+
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Media.Imaging;
+using System;
+
+public class StringToImageSourceConverter : IValueConverter
+{
+    public object? Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is string url && !string.IsNullOrWhiteSpace(url))
+        {
+            try
+            {
+                return new BitmapImage(new Uri(url));
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        return null;
+>>>>>>> main
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)
         => throw new NotImplementedException();
+<<<<<<< P6_Screenings_and_Checkout
 }
+=======
+}
+>>>>>>> main
