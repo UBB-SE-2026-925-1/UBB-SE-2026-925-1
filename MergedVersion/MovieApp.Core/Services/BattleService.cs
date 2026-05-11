@@ -84,8 +84,8 @@ public sealed class BattleService : IBattleService
     {
         if (amount <= 0) throw new InvalidOperationException("Amount must be positive.");
 
-        var bets = await this.betRepository.GetAllAsync(ct);
-        if (bets.Any(b => b.User?.Id == userId && b.Battle?.BattleId == battleId))
+        var existingBet = await this.betRepository.GetByIdAsync(userId, battleId, ct);
+        if (existingBet != null)
         {
             throw new InvalidOperationException("User has already bet.");
         }
@@ -93,6 +93,16 @@ public sealed class BattleService : IBattleService
         var user = await this.userRepository.GetByIdAsync(userId, ct) ?? throw new InvalidOperationException("User not found.");
         var battle = await this.battleRepository.GetByIdAsync(battleId, ct) ?? throw new InvalidOperationException("Battle not found.");
         var movie = await this.movieRepository.GetByIdAsync(movieId, ct) ?? throw new InvalidOperationException("Movie not found.");
+
+        if (!string.Equals(battle.Status, "Active", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("This battle is not accepting bets.");
+        }
+
+        if (movie.Id != battle.FirstMovie?.Id && movie.Id != battle.SecondMovie?.Id)
+        {
+            throw new InvalidOperationException("Selected movie is not part of this battle.");
+        }
 
         await this.pointService.FreezePointsAsync(userId, amount, ct);
 
@@ -190,13 +200,23 @@ public sealed class BattleService : IBattleService
 
     public async Task<Battle?> GetCurrentBattleForUserAsync(int userId, CancellationToken ct = default)
     {
-        return await this.GetActiveBattleAsync(ct);
+        var active = await this.GetActiveBattleAsync(ct);
+        if (active != null)
+        {
+            return active;
+        }
+
+        var battles = await this.battleRepository.GetAllAsync(ct);
+        return battles
+            .Where(b => b.Bets.Any(bet => bet.User?.Id == userId))
+            .OrderByDescending(b => b.EndDate)
+            .ThenByDescending(b => b.BattleId)
+            .FirstOrDefault();
     }
 
     public async Task<Bet?> GetBetAsync(int userId, int battleId, CancellationToken ct = default)
     {
-        var bets = await this.betRepository.GetAllAsync(ct);
-        return bets.FirstOrDefault(b => b.User?.Id == userId && b.Battle?.BattleId == battleId);
+        return await this.betRepository.GetByIdAsync(userId, battleId, ct);
     }
 }
 
