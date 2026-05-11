@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using MovieApp.Core.DTOs;
 using MovieApp.Core.Interfaces.Service;
 using MovieApp.Core.Models;
 using MovieApp.Core.Repositories;
@@ -31,10 +32,16 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{userId}/stats")]
-    public async Task<ActionResult<UserStats>> GetUserStats(int userId)
+    public async Task<ActionResult<UserStatsDTO>> GetUserStats(int userId)
     {
         var stats = await this.pointService.GetUserStatsAsync(userId);
-        return Ok(stats);
+
+        return Ok(new UserStatsDTO
+        {
+            UserId = userId,
+            TotalPoints = stats.TotalPoints,
+            WeeklyScore = stats.WeeklyScore
+        });
     }
 
     [HttpGet("badges")]
