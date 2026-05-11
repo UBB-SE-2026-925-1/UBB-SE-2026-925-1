@@ -1,32 +1,35 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using MovieApp.Core.Models;
+using MovieApp.Core.DTOs;
 using MovieApp.Core.Services;
+using MovieApp.UI.Services.Api;
 
-namespace MovieApp.UI.Services.Api;
+namespace MovieApp.Proxy;
 
 public class RemoteCurrentUserService : ICurrentUserService
 {
     private readonly ApiClient apiClient;
-    private User? currentUser;
+    private CurrentUserDTO? currentUser;
 
     public RemoteCurrentUserService(ApiClient apiClient)
     {
         this.apiClient = apiClient;
     }
 
-    public User CurrentUser => this.currentUser ?? throw new InvalidOperationException("User not initialized");
+    public CurrentUserDTO CurrentUser => this.currentUser
+        ?? throw new InvalidOperationException(
+            "Current user has not been initialized. Call InitializeAsync first.");
 
-    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    public async Task InitializeAsync(
+        CancellationToken cancellationToken = default)
     {
-        if (this.currentUser != null) return;
-        
-        this.currentUser = await this.apiClient.GetAsync<User>("api/users/current", cancellationToken);
-        
-        if (this.currentUser == null)
+        if (this.currentUser is not null)
         {
-            throw new Exception("Could not retrieve current user from API");
+            return;
         }
+
+        this.currentUser = await this.apiClient.GetAsync<CurrentUserDTO>(
+            "api/users/current",
+            cancellationToken)
+            ?? throw new InvalidOperationException(
+                "Could not retrieve the current user from the API.");
     }
 }

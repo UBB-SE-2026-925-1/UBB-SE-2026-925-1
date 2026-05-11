@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace MovieApp.Core.Services;
 
+using MovieApp.Core.DTOs;
 using MovieApp.Core.Models;
 
 /// <summary>
@@ -16,7 +17,7 @@ public interface ICurrentUserService
     /// <summary>
     /// Gets the initialized current user.
     /// </summary>
-    User CurrentUser { get; }
+    CurrentUserDTO CurrentUser { get; }
 
     /// <summary>
     /// Initializes the current-user context.

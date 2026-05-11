@@ -58,7 +58,7 @@ public sealed partial class RewardsPage : Page
     {
         base.OnNavigatedTo(e);
 
-        User? currentUser = App.Services.CurrentUserService?.CurrentUser;
+        var currentUser = App.Services.CurrentUserService?.CurrentUser;
 
         if (currentUser is not null)
         {

@@ -13,7 +13,7 @@ public sealed class UserBadgeRepository : IUserBadgeRepository
     public UserBadgeRepository(MovieAppDbContext context) => this.context = context;
 
     public async Task<List<UserBadge>> GetAllAsync(CancellationToken ct = default)
-        => await this.context.UserBadges.Include(ub => ub.Badge).ToListAsync(ct);
+        => await this.context.UserBadges.Include(ub => ub.User).Include(ub => ub.Badge).ToListAsync(ct);
 
     public async Task<UserBadge?> GetByIdAsync(int userId, int badgeId, CancellationToken ct = default)
         => await this.context.UserBadges
