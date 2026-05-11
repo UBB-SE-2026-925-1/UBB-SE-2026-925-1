@@ -17,7 +17,7 @@ public sealed class ExternalReviewService
 
     private static readonly HashSet<string> StopWords = new(StringComparer.OrdinalIgnoreCase)
     {
-        "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with" 
+        "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "this", "that", "is", "it" 
         /* ... remaining stop words ... */
     };
 

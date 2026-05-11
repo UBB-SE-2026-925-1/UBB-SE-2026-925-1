@@ -47,25 +47,33 @@ public sealed class GuardianReviewProvider : IExternalReviewProvider
             return null;
         }
 
-        var dto = JsonSerializer.Deserialize<GuardianApiResponseDto>(json);
+        try
+        {
+            var dto = JsonSerializer.Deserialize<GuardianApiResponseDto>(json);
 
-        var result = dto?.Response?.Results?
-            .OrderByDescending(r => MatchScore(movieTitle, releaseYear, r.WebTitle, r.Fields?.TrailText))
-            .FirstOrDefault();
+            var result = dto?.Response?.Results?
+                .OrderByDescending(r => MatchScore(movieTitle, releaseYear, r.WebTitle, r.Fields?.TrailText))
+                .FirstOrDefault();
 
-        if (result is null || MatchScore(movieTitle, releaseYear, result.WebTitle, result.Fields?.TrailText) <= 0)
+            if (result is null || MatchScore(movieTitle, releaseYear, result.WebTitle, result.Fields?.TrailText) <= 0)
+            {
+                return null;
+            }
+
+            return new CriticReview
+            {
+                Source = "The Guardian",
+                Score = 0,
+                Headline = result.WebTitle,
+                Snippet = BuildLongerSnippet(result.Fields?.TrailText, movieTitle, releaseYear),
+                Url = result.WebUrl
+            };
+        }
+        catch (JsonException)
         {
             return null;
         }
 
-        return new CriticReview
-        {
-            Source = "The Guardian",
-            Score = 0,
-            Headline = result.WebTitle,
-            Snippet = BuildLongerSnippet(result.Fields?.TrailText, movieTitle, releaseYear),
-            Url = result.WebUrl
-        };
     }
 
     private static string BuildCacheKey(string provider, string movieTitle, int releaseYear)

@@ -41,22 +41,29 @@ public sealed class NytReviewProvider : IExternalReviewProvider
         var json = await this.cacheService.FetchOrCacheAsync(cacheKey, url, this.httpClient, ct);
         if (string.IsNullOrWhiteSpace(json)) return null;
 
-        var dto = JsonSerializer.Deserialize<NytApiResponseDto>(json);
-        var doc = dto?.Response?.Docs?
-            .Where(d => IsSpecificMovieReview(context.Title, context.Year, d.Headline?.Main, d.Snippet))
-            .OrderByDescending(d => MatchScore(movieTitle, releaseYear, d.Headline?.Main, d.Snippet))
-            .FirstOrDefault();
-
-        if (doc is null) return null;
-
-        return new CriticReview
+        try
         {
-            Source = "New York Times",
-            Score = 0,
-            Headline = doc.Headline?.Main ?? string.Empty,
-            Snippet = BuildLongerSnippet(doc.Snippet, context.Title, context.Year),
-            Url = doc.WebUrl
-        };
+            var dto = JsonSerializer.Deserialize<NytApiResponseDto>(json);
+            var doc = dto?.Response?.Docs?
+                .Where(d => IsSpecificMovieReview(context.Title, context.Year, d.Headline?.Main, d.Snippet))
+                .OrderByDescending(d => MatchScore(movieTitle, releaseYear, d.Headline?.Main, d.Snippet))
+                .FirstOrDefault();
+
+            if (doc is null) return null;
+
+            return new CriticReview
+            {
+                Source = "New York Times",
+                Score = 0,
+                Headline = doc.Headline?.Main ?? string.Empty,
+                Snippet = BuildLongerSnippet(doc.Snippet, context.Title, context.Year),
+                Url = doc.WebUrl
+            };
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private async Task<(string Title, int Year, string Director)> GetOmdbContextAsync(string movieTitle, int releaseYear, CancellationToken ct)
@@ -67,13 +74,21 @@ public sealed class NytReviewProvider : IExternalReviewProvider
         var json = await this.cacheService.FetchOrCacheAsync(cacheKey, omdbUrl, this.httpClient, ct);
         if (string.IsNullOrWhiteSpace(json)) return (movieTitle, releaseYear, string.Empty);
 
-        var dto = JsonSerializer.Deserialize<OmdbContextDto>(json);
-        if (dto is null) return (movieTitle, releaseYear, string.Empty);
+        try
+        {
+            var dto = JsonSerializer.Deserialize<OmdbContextDto>(json);
+            if (dto is null) return (movieTitle, releaseYear, string.Empty);
 
-        var year = int.TryParse(dto.Year, out var y) ? y : releaseYear;
-        var dir = dto.Director.Split(',')[0].Trim();
+            var year = int.TryParse(dto.Year, out var y) ? y : releaseYear;
+            var dir = dto.Director.Split(',')[0].Trim();
 
-        return (dto.Title ?? movieTitle, year, dir);
+            return (dto.Title ?? movieTitle, year, dir);
+        }
+        catch (JsonException)
+        {
+            return (movieTitle, releaseYear, string.Empty);
+        }
+
     }
 
     private static string BuildCacheKey(string provider, string movieTitle, int releaseYear)

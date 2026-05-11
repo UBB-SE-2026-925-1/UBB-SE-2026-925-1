@@ -10,23 +10,21 @@ public class RemotePointService : IPointService
     public RemotePointService(ApiClient apiClient) => this.apiClient = apiClient;
 
     public async Task<UserStats> GetUserStatsAsync(int userId, CancellationToken ct = default)
-    {
-        var stats = await this.apiClient.GetAsync<UserStats>($"api/users/{userId}/stats", ct);
-        return stats ?? throw new InvalidOperationException($"No stats found for user {userId}.");
-    }
+        => await this.apiClient.GetAsync<UserStats>($"api/users/{userId}/stats", ct)
+        ?? throw new InvalidOperationException("The API did not return user stats.");
 
     public Task AddPointsAsync(int userId, int movieId, bool isBattleMovie, CancellationToken ct = default)
-        => this.apiClient.PostAsync($"api/users/{userId}/points/add", new { movieId, isBattleMovie }, ct);
+        => throw new NotSupportedException("Point mutations are handled by the Web API.");
 
     public Task DeductPointsAsync(int userId, int points, CancellationToken ct = default)
-        => this.apiClient.PostAsync($"api/users/{userId}/points/deduct", new { points }, ct);
+        => throw new NotSupportedException("Point mutations are handled by the Web API.");
 
     public Task FreezePointsAsync(int userId, int amount, CancellationToken ct = default)
-        => this.apiClient.PostAsync($"api/users/{userId}/points/freeze", new { amount }, ct);
+        => throw new NotSupportedException("Point mutations are handled by the Web API.");
 
     public Task RefundPointsAsync(int userId, int amount, CancellationToken ct = default)
-        => this.apiClient.PostAsync($"api/users/{userId}/points/refund", new { amount }, ct);
+        => throw new NotSupportedException("Point mutations are handled by the Web API.");
 
     public Task UpdateWeeklyScoreAsync(int userId, CancellationToken ct = default)
-        => this.apiClient.PostAsync($"api/users/{userId}/points/weekly-score", new { }, ct);
+        => throw new NotSupportedException("Point mutations are handled by the Web API.");
 }

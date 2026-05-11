@@ -30,6 +30,7 @@ builder.Services.AddScoped<IBookingRepository, RemoteBookingRepository>();
 builder.Services.AddScoped<ISlotMachineService, RemoteSlotMachineService>();
 builder.Services.AddScoped<ITriviaRepository, RemoteTriviaRepository>();
 builder.Services.AddScoped<ITriviaRewardRepository, RemoteTriviaRewardRepository>();
+builder.Services.AddScoped<IBattleService, RemoteBattleService>();
 builder.Services.AddScoped<IPointService, RemotePointService>();
 builder.Services.AddScoped<IBadgeService, RemoteBadgeService>();
 
