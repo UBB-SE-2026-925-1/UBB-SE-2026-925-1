@@ -30,7 +30,7 @@ public class RemoteTriviaRewardRepository : ITriviaRewardRepository
         => await this.apiClient.GetAsync<TriviaReward>(
                $"api/trivia/reward/{userIdentifier}", cancellationToken);
 
-    // No POST endpoints for trivia rewards on the WebAPI yet — both stubs throw.
+    // No POST endpoints for trivia rewards on the WebAPI yet - both stubs throw.
     public Task AddAsync(TriviaReward reward, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
 
