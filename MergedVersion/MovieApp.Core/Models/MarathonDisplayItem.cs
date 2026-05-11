@@ -10,6 +10,15 @@ using System;
 /// </summary>
 public sealed class MarathonDisplayItem
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MarathonDisplayItem"/> class.
+    /// This constructor is required for XAML infrastructure.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    public MarathonDisplayItem()
+    {
+    }
+
     private const double RatingDivisor = 20.0;
     private const double MaximumRatingValue = 5.0;
     private const int LargeCapacityValue = 999999;

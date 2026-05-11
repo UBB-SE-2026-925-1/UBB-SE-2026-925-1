@@ -27,7 +27,7 @@ public sealed class EventRepository : IEventRepository
     /// <inheritdoc/>
     public async Task<IEnumerable<Event>> GetAllAsync(CancellationToken ct = default)
     {
-        return await this.context.Events.ToListAsync(ct);
+        return await this.context.Events.AsNoTracking().ToListAsync(ct);
     }
 
     /// <inheritdoc/>
@@ -41,7 +41,8 @@ public sealed class EventRepository : IEventRepository
     /// <inheritdoc/>
     public async Task<Event?> FindByIdAsync(int eventId, CancellationToken ct = default)
     {
-        return await this.context.Events.FindAsync(new object[] { eventId }, ct);
+        return await this.context.Events.AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == eventId, ct);
     }
 
     /// <inheritdoc/>

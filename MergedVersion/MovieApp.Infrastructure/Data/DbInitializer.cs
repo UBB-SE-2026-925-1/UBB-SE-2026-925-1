@@ -104,10 +104,12 @@ public static class DbInitializer
         // 4.5 Seed Events
         if (!await context.Events.AnyAsync())
         {
-            var movie = await context.Movies.FirstAsync();
+            var adminUserForEvents = await context.Users.FirstOrDefaultAsync(u => u.AuthProvider == "Seed" && u.AuthSubject == "Admin");
+            int creatorId = adminUserForEvents?.Id ?? 1;
+
             var events = new List<Event>
             {
-                new() 
+                new Event 
                 { 
                     Id = 0,
                     Title = "The Shawshank Redemption Screening", 
@@ -117,19 +119,55 @@ public static class DbInitializer
                     TicketPrice = 15.00m, 
                     EventType = "Marathon",
                     MaxCapacity = 100,
-                    CreatorUserId = 1 
+                    CreatorUserId = creatorId 
                 },
-                new() 
+                new Event 
                 { 
                     Id = 0,
                     Title = "Action Movie Night", 
-                    Description = "A night of action movies.", 
+                    Description = "A night of intense action with the latest blockbusters.", 
                     EventDateTime = DateTime.Now.AddDays(14), 
                     LocationReference = "Cinema City, Hall 5", 
                     TicketPrice = 25.00m, 
                     EventType = "Premiere",
                     MaxCapacity = 200,
-                    CreatorUserId = 2
+                    CreatorUserId = creatorId
+                },
+                new Event
+                {
+                    Id = 0,
+                    Title = "Sci-Fi Sunday: Inception",
+                    Description = "Experience the mind-bending masterpiece on the big screen.",
+                    EventDateTime = DateTime.Now.AddDays(2),
+                    LocationReference = "Galaxy IMAX",
+                    TicketPrice = 18.50m,
+                    EventType = "Outdoor screening",
+                    MaxCapacity = 150,
+                    CreatorUserId = creatorId
+                },
+                new Event
+                {
+                    Id = 0,
+                    Title = "Classic Cinema: Pulp Fiction",
+                    Description = "Tarantino's masterpiece in 4K.",
+                    EventDateTime = DateTime.Now.AddDays(10),
+                    LocationReference = "Retro Cinema, Hall A",
+                    TicketPrice = 12.00m,
+                    EventType = "Marathon",
+                    MaxCapacity = 80,
+                    CreatorUserId = creatorId
+                },
+                new Event
+                {
+                    Id = 0,
+                    Title = "Horror Midnight Special",
+                    Description = "Don't come alone.",
+                    EventDateTime = DateTime.Now.AddDays(5),
+                    LocationReference = "Dark Hall, Basement",
+                    TicketPrice = 10.00m,
+                    EventType = "Premiere",
+                    MaxCapacity = 50,
+                    CreatorUserId = creatorId
                 }
             };
             context.Events.AddRange(events);

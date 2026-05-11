@@ -5,12 +5,23 @@
 namespace MovieApp.Core.Models;
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// Represents a movie event or screening with capacity and enrollment details.
 /// </summary>
 public sealed class Event
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Event"/> class.
+    /// This constructor is required for XAML infrastructure and uses [SetsRequiredMembers]
+    /// to satisfy the compiler's required member constraints.
+    /// </summary>
+    [SetsRequiredMembers]
+    public Event()
+    {
+    }
+
     /// <summary>
     /// The default maximum capacity for an event when not otherwise specified.
     /// </summary>
