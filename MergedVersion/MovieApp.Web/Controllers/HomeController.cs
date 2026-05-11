@@ -14,4 +14,10 @@ public class HomeController : Controller
     {
         return View();
     }
+
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult NotFound()
+    {
+        return View("~/Views/Shared/NotFound.cshtml");
+    }
 }

@@ -25,6 +25,11 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<User>> GetCurrentUser()
     {
         var user = await this.userRepository.FindByAuthIdentityAsync("Seed", "Admin");
+        if (user == null)
+        {
+            var all = await this.userRepository.GetAllAsync();
+            user = all.FirstOrDefault();
+        }
         if (user == null) return NotFound();
         return Ok(user);
     }

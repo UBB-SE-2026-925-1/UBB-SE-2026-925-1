@@ -1236,6 +1236,23 @@ namespace MovieApp.Infrastructure.Migrations
 
                     b.Navigation("UserStats");
                 });
+
+            modelBuilder.Entity("MovieApp.Core.Models.WatchedEvent", b =>
+                {
+                    b.Property<int>("EventId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EventTitle")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TargetPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("EventId");
+
+                    b.ToTable("WatchedEvents");
+                });
 #pragma warning restore 612, 618
         }
     }

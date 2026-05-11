@@ -85,6 +85,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<MovieAppDbContext>();
+        context.Database.Migrate();
         await DbInitializer.SeedAsync(context);
     }
     catch (Exception ex)

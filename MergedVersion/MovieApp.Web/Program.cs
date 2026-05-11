@@ -30,6 +30,8 @@ builder.Services.AddScoped<IBookingRepository, RemoteBookingRepository>();
 builder.Services.AddScoped<ISlotMachineService, RemoteSlotMachineService>();
 builder.Services.AddScoped<ITriviaRepository, RemoteTriviaRepository>();
 builder.Services.AddScoped<ITriviaRewardRepository, RemoteTriviaRewardRepository>();
+builder.Services.AddScoped<IPointService, RemotePointService>();
+builder.Services.AddScoped<IBadgeService, RemoteBadgeService>();
 
 // ExternalReviewService is registered with no providers for now.
 // ASP.NET Core DI resolves IEnumerable<IExternalReviewProvider> as empty when
@@ -45,6 +47,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseStatusCodePagesWithReExecute("/Home/NotFound");
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();

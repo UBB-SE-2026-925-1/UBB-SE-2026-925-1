@@ -37,6 +37,44 @@ END");
             // Non-fatal: if the provider doesn't support the IF block (e.g. tests with InMemory), ignore.
         }
 
+        // Ensure WatchedEvents table exists (added after initial migration; raw SQL covers
+        // databases that were created via EnsureCreated rather than Migrate).
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'WatchedEvents')
+BEGIN
+    CREATE TABLE [WatchedEvents] (
+        [EventId]     INT            NOT NULL,
+        [EventTitle]  NVARCHAR(MAX)  NOT NULL,
+        [TargetPrice] DECIMAL(18,2)  NOT NULL,
+        CONSTRAINT [PK_WatchedEvents] PRIMARY KEY ([EventId])
+    )
+END");
+        }
+        catch
+        {
+            // Non-fatal: ignore on providers that do not support this DDL (e.g. InMemory).
+        }
+
+        // Ensure the legacy Rating column in Movies has a DEFAULT constraint so that
+        // EF Core inserts (which omit the column) do not violate the NOT NULL constraint.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (
+    SELECT 1 FROM sys.default_constraints
+    WHERE parent_object_id = OBJECT_ID('Movies')
+      AND col_name(parent_object_id, parent_column_id) = 'Rating')
+BEGIN
+    ALTER TABLE [Movies] ADD DEFAULT 0.0 FOR [Rating]
+END");
+        }
+        catch
+        {
+            // Non-fatal: ignore on providers that do not support this DDL (e.g. InMemory).
+        }
+
         // Smart seeding will handle duplicates/missing data below
 
         // 1. Seed Genres
