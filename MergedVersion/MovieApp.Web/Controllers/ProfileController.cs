@@ -39,7 +39,7 @@ public class ProfileController : Controller
         {
             Username = username,
             Stats = await statsTask,
-            EarnedBadges = await earnedTask,
+            EarnedBadges = (await earnedTask).Badges,
             AllBadges = await allTask,
         };
 
