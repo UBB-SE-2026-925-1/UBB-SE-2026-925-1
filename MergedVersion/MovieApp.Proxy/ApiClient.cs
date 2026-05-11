@@ -12,6 +12,7 @@ public class ApiClient
 {
     private readonly HttpClient httpClient;
     private readonly JsonSerializerOptions jsonOptions;
+    private string? bearerToken;
 
     public ApiClient(HttpClient httpClient)
     {
@@ -25,6 +26,7 @@ public class ApiClient
     /// </summary>
     public void SetBearerToken(string token)
     {
+        bearerToken = token;
         this.httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
     }
