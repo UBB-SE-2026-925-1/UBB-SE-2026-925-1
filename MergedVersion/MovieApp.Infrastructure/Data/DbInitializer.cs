@@ -13,6 +13,30 @@ public static class DbInitializer
     {
         context.Database.EnsureCreated();
 
+        // Ensure SeatBookings table exists on databases created before this entity was added.
+        // EnsureCreated() does not add tables to an already-created schema.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'SeatBookings')
+BEGIN
+    CREATE TABLE [SeatBookings] (
+        [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        [ScreeningId] INT NOT NULL,
+        [UserId] INT NOT NULL,
+        [Row] INT NOT NULL,
+        [Column] INT NOT NULL,
+        [BookedAt] DATETIME2 NOT NULL,
+        CONSTRAINT [UQ_SeatBookings_Screening_Seat] UNIQUE ([ScreeningId], [Row], [Column])
+    );
+    CREATE INDEX [IX_SeatBookings_ScreeningId] ON [SeatBookings] ([ScreeningId]);
+END");
+        }
+        catch
+        {
+            // Non-fatal: if the provider doesn't support the IF block (e.g. tests with InMemory), ignore.
+        }
+
         // Smart seeding will handle duplicates/missing data below
 
         // 1. Seed Genres
@@ -171,6 +195,41 @@ public static class DbInitializer
                 }
             };
             context.Events.AddRange(events);
+            await context.SaveChangesAsync();
+        }
+
+        // 4.6 Seed Screenings — 3 future showtimes per movie, distributed across the available events.
+        var allMoviesForScreenings = await context.Movies.ToListAsync();
+        var allEventsForScreenings = await context.Events.OrderBy(e => e.Id).ToListAsync();
+        if (allMoviesForScreenings.Any() && allEventsForScreenings.Any())
+        {
+            var rng = new Random(42);
+            var baseDate = DateTime.Now.Date.AddHours(19); // 7 PM today as anchor
+            int eventCursor = 0;
+
+            foreach (var m in allMoviesForScreenings)
+            {
+                int existing = await context.Screenings.CountAsync(s => s.MovieId == m.Id);
+                if (existing >= 3) continue;
+
+                int toCreate = 3 - existing;
+                for (int i = 0; i < toCreate; i++)
+                {
+                    var ev = allEventsForScreenings[eventCursor % allEventsForScreenings.Count];
+                    eventCursor++;
+
+                    int dayOffset = 1 + (existing + i) * 2 + rng.Next(0, 2);
+                    int hourOffset = rng.Next(0, 4); // 19:00 .. 22:00
+
+                    context.Screenings.Add(new Screening
+                    {
+                        Id = 0,
+                        MovieId = m.Id,
+                        EventId = ev.Id,
+                        ScreeningTime = baseDate.AddDays(dayOffset).AddHours(hourOffset),
+                    });
+                }
+            }
             await context.SaveChangesAsync();
         }
 

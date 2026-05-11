@@ -6,32 +6,42 @@
     xmlns:models="using:MovieApp.Core.Models"
     xmlns:converters="using:MovieApp.UI.Converters"
     xmlns:local="using:MovieApp.UI.Controls"
-    Title="Visual Seat Guide"
-    CloseButtonText="Close">
+    Title="Select Seats"
+    PrimaryButtonText="Confirm"
+    CloseButtonText="Cancel"
+    DefaultButton="Primary">
 
     <ContentDialog.Resources>
         <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
         <converters:HexToBrushConverter x:Key="HexToBrushConverter"/>
     </ContentDialog.Resources>
 
-    <StackPanel Spacing="20" MinWidth="450">
-        
-        <Border Height="8" Background="{ThemeResource TextFillColorDisabledBrush}" CornerRadius="4" Margin="30,0,30,10">
+    <StackPanel Spacing="16" MinWidth="450">
+
+        <Border Height="8" Background="{ThemeResource TextFillColorDisabledBrush}" CornerRadius="4" Margin="30,0,30,4">
             <TextBlock Text="SCREEN" HorizontalAlignment="Center" FontSize="10" Margin="0,-20,0,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
         </Border>
 
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20" Margin="0,0,0,10">
-            <StackPanel Orientation="Horizontal" Spacing="5">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="14">
+            <StackPanel Orientation="Horizontal" Spacing="4">
                 <Rectangle Width="16" Height="16" Fill="#4CAF50" RadiusX="4" RadiusY="4"/>
-                <TextBlock Text="Optimal (Sweet Spot)" FontSize="12" VerticalAlignment="Center"/>
+                <TextBlock Text="Optimal" FontSize="12" VerticalAlignment="Center"/>
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="5">
+            <StackPanel Orientation="Horizontal" Spacing="4">
                 <Rectangle Width="16" Height="16" Fill="#FFC107" RadiusX="4" RadiusY="4"/>
                 <TextBlock Text="Standard" FontSize="12" VerticalAlignment="Center"/>
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="5">
+            <StackPanel Orientation="Horizontal" Spacing="4">
                 <Rectangle Width="16" Height="16" Fill="#FF4D4D" RadiusX="4" RadiusY="4"/>
-                <TextBlock Text="Poor (Neck Strain)" FontSize="12" VerticalAlignment="Center"/>
+                <TextBlock Text="Poor" FontSize="12" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <Rectangle Width="16" Height="16" Fill="Transparent" Stroke="#1F6FEB" StrokeThickness="2" RadiusX="4" RadiusY="4"/>
+                <TextBlock Text="Selected" FontSize="12" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <Rectangle Width="16" Height="16" Fill="#9E9E9E" RadiusX="4" RadiusY="4"/>
+                <TextBlock Text="Booked" FontSize="12" VerticalAlignment="Center"/>
             </StackPanel>
         </StackPanel>
 
@@ -41,23 +51,41 @@
                     <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="{Binding TotalColumns}" HorizontalAlignment="Center"/>
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
-            
+
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:Seat">
-                    <Grid Margin="3" Width="30" Height="30" ToolTipService.ToolTip="{x:Bind Row}">
-                        
-                        <Rectangle Fill="{x:Bind SeatColor, Converter={StaticResource HexToBrushConverter}}" RadiusX="6" RadiusY="6" 
-                                   Opacity="{x:Bind IsAvailable, Converter={StaticResource BoolToOpacityConverter}}"/>
-                        
-                        <FontIcon Glyph="&#xE734;" FontSize="14" Foreground="White" 
-                                  Visibility="{x:Bind local:SeatGuideDialog.GetVisibility(IsSweetSpot)}" />
-                        
+                    <Grid Margin="3" Width="30" Height="30"
+                          Tapped="SeatGrid_Tapped"
+                          ToolTipService.ToolTip="{x:Bind Label}">
+
+                        <Rectangle Fill="{x:Bind SeatColor, Converter={StaticResource HexToBrushConverter}}"
+                                   RadiusX="6" RadiusY="6"
+                                   Opacity="{x:Bind IsAvailable, Mode=OneWay, Converter={StaticResource BoolToOpacityConverter}}"/>
+
+                        <Rectangle Stroke="#1F6FEB" StrokeThickness="3"
+                                   RadiusX="6" RadiusY="6"
+                                   Visibility="{x:Bind local:SeatGuideDialog.GetVisibility(IsSelected), Mode=OneWay}"/>
+
+                        <FontIcon Glyph="&#xE73E;" FontSize="14" Foreground="#1F6FEB"
+                                  Visibility="{x:Bind local:SeatGuideDialog.GetVisibility(IsSelected), Mode=OneWay}"/>
+
+                        <FontIcon Glyph="&#xE734;" FontSize="14" Foreground="White"
+                                  Visibility="{x:Bind local:SeatGuideDialog.GetSweetSpotVisibility(IsSweetSpot, IsSelected), Mode=OneWay}"/>
+
                         <FontIcon Glyph="&#xE711;" FontSize="14" Foreground="Black" Opacity="0.5"
-                                  Visibility="{x:Bind local:SeatGuideDialog.GetInverseVisibility(IsAvailable)}" />
+                                  Visibility="{x:Bind local:SeatGuideDialog.GetInverseVisibility(IsAvailable), Mode=OneWay}"/>
                     </Grid>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+
+        <TextBlock HorizontalAlignment="Center"
+                   FontWeight="SemiBold"
+                   Foreground="{ThemeResource TextFillColorPrimaryBrush}">
+            <Run Text="Selected:"/>
+            <Run Text="{Binding SelectedCount}"/>
+            <Run Text="seat(s)"/>
+        </TextBlock>
 
     </StackPanel>
 </ContentDialog>

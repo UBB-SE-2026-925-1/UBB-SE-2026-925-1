@@ -65,6 +65,9 @@ public partial class App : Application
         services.AddScoped<IUserMovieDiscountRepository, RemoteUserMovieDiscountRepository>();
         services.AddTransient<IUserEventAttendanceRepository, UserEventAttendanceRepository>();
         services.AddScoped<IPriceWatcherRepository, RemotePriceWatcherRepository>();
+<<<<<<< P6_Screenings_and_Checkout
+        services.AddScoped<IBookingRepository, RemoteBookingRepository>();
+=======
         services.AddTransient<IUserEventAttendanceRepository>(provider =>
         {
             var factory = provider.GetRequiredService<IDbContextFactory<MovieAppDbContext>>();
@@ -76,6 +79,7 @@ public partial class App : Application
             var factory = provider.GetRequiredService<IDbContextFactory<MovieAppDbContext>>();
             return new EventRepository(factory.CreateDbContext());
         });
+>>>>>>> main
 
         // 4. Services
         services.AddScoped<ICatalogService, RemoteCatalogService>();

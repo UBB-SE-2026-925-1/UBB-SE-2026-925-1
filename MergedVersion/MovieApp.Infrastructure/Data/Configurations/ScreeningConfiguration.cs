@@ -20,11 +20,7 @@ public sealed class ScreeningConfiguration : IEntityTypeConfiguration<Screening>
             .HasForeignKey(s => s.MovieId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Seed default screenings
-        builder.HasData(
-            new Screening { Id = 1, MovieId = 1, EventId = 1, ScreeningTime = DateTime.Now.AddDays(1) },
-            new Screening { Id = 2, MovieId = 2, EventId = 1, ScreeningTime = DateTime.Now.AddDays(2) },
-            new Screening { Id = 3, MovieId = 3, EventId = 2, ScreeningTime = DateTime.Now.AddDays(3) }
-        );
+        // Screenings are seeded at runtime in DbInitializer so that times stay
+        // in the future and so that every existing movie gets coverage.
     }
 }

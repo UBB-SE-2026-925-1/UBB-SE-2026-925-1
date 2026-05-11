@@ -1,0 +1,135 @@
+@model MovieApp.Web.Models.CheckoutViewModel
+@{
+    ViewData["Title"] = "Book seats";
+    var movieTitle = Model.Movie?.Title ?? $"Movie #{Model.Screening.MovieId}";
+    var price = Model.Event?.TicketPrice ?? 0m;
+    var en = System.Globalization.CultureInfo.GetCultureInfo("en-US");
+}
+
+<div class="container py-4">
+    <a asp-controller="Screening" asp-action="ForMovie" asp-route-id="@Model.Screening.MovieId"
+       class="btn btn-outline-primary btn-sm mb-3 d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill shadow-sm">
+        <span aria-hidden="true" style="font-size:1.1em; line-height:1;">&larr;</span>
+        <span>Back to screenings</span>
+    </a>
+
+    <h2 class="mb-2">Book seats — <em>@movieTitle</em></h2>
+    <div class="text-muted mb-4">
+        @Model.Screening.ScreeningTime.ToString("dddd, dd MMMM yyyy 'at' HH:mm", en)
+        @if (Model.Event is not null)
+        {
+            <span> &bull; @Model.Event.LocationReference</span>
+            <span> &bull; @price.ToString("0.00") per seat</span>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+    {
+        <div class="alert alert-warning">@Model.StatusMessage</div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-center mb-3">
+                <div style="width: min(100%, 480px); height: 8px; background: #495057; border-radius: 4px;"></div>
+            </div>
+            <p class="text-center text-muted small mb-4">SCREEN</p>
+
+            <form method="post" asp-action="Reserve" id="reserveForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="screeningId" value="@Model.Screening.Id" />
+                <input type="hidden" name="selectedSeats" id="selectedSeatsInput" value="" />
+
+                <div class="d-flex flex-column align-items-center gap-1">
+                    @{
+                        int colCount = Model.TotalColumns;
+                        var rows = Model.Seats.GroupBy(s => s.Row).OrderBy(g => g.Key);
+                    }
+                    @foreach (var rowGroup in rows)
+                    {
+                        <div class="d-flex gap-1">
+                            @foreach (var seat in rowGroup.OrderBy(s => s.Column))
+                            {
+                                <button type="button"
+                                        class="seat-btn @(seat.IsBooked ? "booked" : "free")"
+                                        data-row="@seat.Row"
+                                        data-col="@seat.Column"
+                                        @(seat.IsBooked ? "disabled" : "")
+                                        title="Row @seat.Row, Col @seat.Column">
+                                    @seat.Row-@seat.Column
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div>
+                        <span class="badge bg-success me-2">Available</span>
+                        <span class="badge bg-primary me-2">Selected</span>
+                        <span class="badge bg-secondary">Booked</span>
+                    </div>
+                    <div>
+                        <span class="me-3">Selected: <strong id="selectedCount">0</strong></span>
+                        <span class="me-3">Total: <strong id="totalPrice">0.00</strong></span>
+                        <button type="submit" class="btn btn-primary" id="confirmBtn" disabled>Confirm purchase</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .seat-btn {
+        width: 38px;
+        height: 38px;
+        border: none;
+        border-radius: 6px;
+        font-size: 11px;
+        color: white;
+        cursor: pointer;
+    }
+    .seat-btn.free { background: #198754; }
+    .seat-btn.free:hover { background: #157347; }
+    .seat-btn.selected { background: #0d6efd; outline: 2px solid #084298; }
+    .seat-btn.booked { background: #6c757d; cursor: not-allowed; opacity: 0.6; }
+</style>
+
+<script>
+    (function () {
+        const buttons = document.querySelectorAll('.seat-btn.free, .seat-btn.selected');
+        const input = document.getElementById('selectedSeatsInput');
+        const counter = document.getElementById('selectedCount');
+        const total = document.getElementById('totalPrice');
+        const confirmBtn = document.getElementById('confirmBtn');
+        const unitPrice = @price.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        const selected = new Set();
+
+        function refresh() {
+            input.value = Array.from(selected).join(',');
+            counter.textContent = selected.size;
+            total.textContent = (selected.size * unitPrice).toFixed(2);
+            confirmBtn.disabled = selected.size === 0;
+        }
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.dataset.row + '-' + btn.dataset.col;
+                if (selected.has(key)) {
+                    selected.delete(key);
+                    btn.classList.remove('selected');
+                    btn.classList.add('free');
+                } else {
+                    selected.add(key);
+                    btn.classList.add('selected');
+                    btn.classList.remove('free');
+                }
+                refresh();
+            });
+        });
+
+        refresh();
+    })();
+</script>

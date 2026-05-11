@@ -51,13 +51,17 @@ public class RemoteScreeningRepository : IScreeningRepository
     private readonly ApiClient apiClient;
     public RemoteScreeningRepository(ApiClient apiClient) => this.apiClient = apiClient;
 
-    public async Task<IReadOnlyList<Screening>> GetByEventIdAsync(int eventIdentifier, CancellationToken ct = default) => 
-        (await this.apiClient.GetAsync<List<Screening>>($"api/screenings/event/{eventIdentifier}", ct))?.AsReadOnly() ?? new List<Screening>().AsReadOnly();
+    public async Task<Screening?> GetByIdAsync(int screeningId, CancellationToken ct = default) =>
+        await this.apiClient.GetAsync<Screening>($"api/screenings/{screeningId}", ct);
+
+    public async Task<IReadOnlyList<Screening>> GetByEventIdAsync(int eventIdentifier, CancellationToken ct = default) =>
+        (await this.apiClient.GetAsync<IEnumerable<Screening>>($"api/screenings/event/{eventIdentifier}", ct))?.ToList().AsReadOnly() ?? new List<Screening>().AsReadOnly();
 
     public async Task<IReadOnlyList<Screening>> GetByMovieIdAsync(int movieIdentifier, CancellationToken ct = default) => 
         (await this.apiClient.GetAsync<List<Screening>>($"api/screenings/movie/{movieIdentifier}", ct))?.AsReadOnly() ?? new List<Screening>().AsReadOnly();
 
-    public Task AddAsync(Screening screening, CancellationToken ct = default) => throw new NotImplementedException();
+    public Task AddAsync(Screening screening, CancellationToken ct = default) =>
+        this.apiClient.PostAsync<Screening>("api/screenings", screening, ct);
 }
 
 // --- UserMovieDiscount Repository ---
@@ -72,7 +76,8 @@ public class RemoteUserMovieDiscountRepository : IUserMovieDiscountRepository
     public Task MarkRedeemedAsync(int rewardId, CancellationToken ct = default) => 
         this.apiClient.PostAsync<object>($"api/rewards/{rewardId}/redeem", new { }, ct);
 
-    public Task AddAsync(Reward reward, CancellationToken ct = default) => throw new NotImplementedException();
+    public Task AddAsync(Reward reward, CancellationToken ct = default) =>
+        this.apiClient.PostAsync<Reward>("api/rewards", reward, ct);
 }
 
 // --- UserEventAttendance Repository ---
