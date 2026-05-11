@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using MovieApp.Core.Interfaces.Repository;
 using MovieApp.Core.Interfaces.Service;
 using MovieApp.Core.Models;
-using MovieApp.Core.Models;
 using MovieApp.Core.Repositories;
 
 namespace MovieApp.Core.Services;
