@@ -1,5 +1,6 @@
 using MovieApp.Core.Interfaces;
 using MovieApp.Core.Interfaces.Service;
+using MovieApp.Core.Repositories;
 using MovieApp.Core.Services;
 using MovieApp.Proxy;
 
@@ -24,6 +25,9 @@ builder.Services.AddScoped<ICatalogService, RemoteCatalogService>();
 builder.Services.AddScoped<IReviewService, RemoteReviewService>();
 builder.Services.AddScoped<ICommentService, RemoteCommentService>();
 builder.Services.AddScoped<ICurrentUserService, RemoteCurrentUserService>();
+builder.Services.AddScoped<ISlotMachineService, RemoteSlotMachineService>();
+builder.Services.AddScoped<ITriviaRepository, RemoteTriviaRepository>();
+builder.Services.AddScoped<ITriviaRewardRepository, RemoteTriviaRewardRepository>();
 
 // ExternalReviewService is registered with no providers for now.
 // ASP.NET Core DI resolves IEnumerable<IExternalReviewProvider> as empty when
