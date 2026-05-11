@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MovieApp.Core.Models;
+using MovieApp.Core.Repositories;
 using MovieApp.Core.Services;
-
 namespace MovieApp.WebAPI.Controllers;
 
 [ApiController]
@@ -49,5 +49,47 @@ public class MarathonsController : ControllerBase
     {
         var leaderboard = await this.marathonService.GetLeaderboardWithUsernamesAsync(id);
         return Ok(leaderboard);
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Marathon>>> GetMarathons([FromServices] IMarathonRepository marathonRepository)
+    {
+        var marathons = await marathonRepository.GetActiveMarathonsAsync();
+        return Ok(marathons);
+    }
+
+    [HttpPost("{id}/quiz")]
+    public async Task<ActionResult> UpdateQuizResult(int id, [FromBody] int correctAnswersCount)
+    {
+        await this.marathonService.UpdateQuizResultAsync(id, correctAnswersCount);
+        return Ok();
+    }
+
+    [HttpPost("{id}/movies/{movieId}/log")]
+    public async Task<ActionResult<bool>> LogMovie(int id, int movieId, [FromBody] int correctAnswersCount)
+    {
+        var success = await this.marathonService.LogMovieAsync(id, movieId, correctAnswersCount);
+        return Ok(success);
+    }
+
+    [HttpGet("{id}/participants/count")]
+    public async Task<ActionResult<int>> GetParticipantCount(int id)
+    {
+        var count = await this.marathonService.GetParticipantCountAsync(id);
+        return Ok(count);
+    }
+
+    [HttpGet("{id}/movies/count")]
+    public async Task<ActionResult<int>> GetMarathonMovieCount(int id)
+    {
+        var count = await this.marathonService.GetMarathonMovieCountAsync(id);
+        return Ok(count);
+    }
+
+    [HttpGet("{id}/prerequisite/{userId}")]
+    public async Task<ActionResult<bool>> IsPrerequisiteCompleted(int id, int userId)
+    {
+        var isCompleted = await this.marathonService.IsPrerequisiteCompletedAsync(userId, id);
+        return Ok(isCompleted);
     }
 }

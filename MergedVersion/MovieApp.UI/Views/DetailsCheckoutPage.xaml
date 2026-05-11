@@ -4,159 +4,187 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:MovieApp.Core.Models"
+    xmlns:converters="using:MovieApp.UI.Converters"
     mc:Ignorable="d">
 
-    <ScrollViewer
-        Padding="32"
-        VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="24">
-            <StackPanel Spacing="6">
-                <TextBlock
-                    Style="{ThemeResource TitleTextBlockStyle}"
-                    Text="Details and Checkout" />
-                <TextBlock
-                    Style="{StaticResource SectionCaptionTextStyle}"
-                    Text="This page is the implementation surface for event details, join or purchase actions, rewards, referral-code entry, and the best-seat guide." />
+    <Page.Resources>
+        <converters:StringNotEmptyToBoolConverter x:Key="StringNotEmptyToBool"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <converters:BoolToVisibilityInverterConverter x:Key="BoolToVisibilityInverter"/>
+        <converters:DateTimeFormatConverter x:Key="ScreeningTimeFormat" Format="ddd, dd MMM yyyy &#x2022; HH:mm"/>
+        <converters:StringToImageSourceConverter x:Key="StringToImageSource"/>
+    </Page.Resources>
+
+    <ScrollViewer Padding="32" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="20">
+
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button x:Name="BackButton" Click="BackButton_Click" Content="Back"/>
+                <TextBlock Style="{ThemeResource TitleTextBlockStyle}" Text="Details and Checkout" VerticalAlignment="Center"/>
             </StackPanel>
+
+            <InfoBar
+                IsOpen="{x:Bind ViewModel.StatusMessage, Mode=OneWay, Converter={StaticResource StringNotEmptyToBool}}"
+                Message="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                Severity="Informational"
+                IsClosable="False"/>
 
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.6*" />
-                    <ColumnDefinition Width="1.1*" />
+                    <ColumnDefinition Width="1.6*"/>
+                    <ColumnDefinition Width="1.1*"/>
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Spacing="16">
-                    <Border Style="{StaticResource SurfaceCardStyle}">
+
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="16">
                         <Grid ColumnSpacing="16">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="220" />
-                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <Border
-                                Height="320"
-                                Background="{StaticResource ShellHeroBrush}"
-                                CornerRadius="8" />
+                            <Border Width="200" Height="300" CornerRadius="8" VerticalAlignment="Top">
+                                <Image Source="{x:Bind ViewModel.Movie.PosterUrl, Mode=OneWay, Converter={StaticResource StringToImageSource}}" Stretch="UniformToFill"/>
+                            </Border>
 
-                            <StackPanel
-                                Grid.Column="1"
-                                Spacing="12">
-                                <TextBlock
-                                    Style="{ThemeResource TitleTextBlockStyle}"
-                                    Text="Selected event detail host" />
-                                <TextBlock
-                                    Style="{StaticResource SectionCaptionTextStyle}"
-                                    Text="Bind title, description, historical rating, date, location, poster, and seat-availability summary here." />
-                                <TextBox Header="Title" Text="Bind event title" />
-                                <TextBox Header="Location" Text="Bind event location and hall" />
-                                <TextBox Header="Date and time" Text="Bind date/time" />
-                                <TextBox Header="Historical rating" Text="Bind normalized rating" />
-                                <TextBox
-                                    AcceptsReturn="True"
-                                    Header="Description"
-                                    Height="110"
-                                    Text="Bind event description and movie-screening metadata here." />
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Button Content="Will attend" />
-                                    <Button Content="Buy ticket" />
-                                    <ToggleButton Content="Favorite" />
-                                    <ToggleButton Content="Watch price" />
+                            <StackPanel Grid.Column="1" Spacing="10">
+                                <TextBlock Style="{ThemeResource TitleTextBlockStyle}" Text="{x:Bind ViewModel.Movie.Title, Mode=OneWay}" TextWrapping="Wrap"/>
+                                <TextBlock FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"
+                                           Text="{x:Bind ViewModel.Movie.Description, Mode=OneWay}"/>
+
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Event" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    <TextBlock FontWeight="SemiBold" Text="{x:Bind ViewModel.EventTitle, Mode=OneWay}"/>
+                                </StackPanel>
+
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Date and time" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    <TextBlock Text="{x:Bind ViewModel.EventDateTimeDisplay, Mode=OneWay}"/>
+                                </StackPanel>
+
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Location" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    <TextBlock Text="{x:Bind ViewModel.EventLocation, Mode=OneWay}"/>
+                                </StackPanel>
+
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Unit ticket price" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    <TextBlock Text="{x:Bind ViewModel.UnitPriceDisplay, Mode=OneWay}"/>
                                 </StackPanel>
                             </StackPanel>
                         </Grid>
                     </Border>
 
-                    <Border Style="{StaticResource SurfaceCardStyle}">
-                        <StackPanel Spacing="16">
-                            <TextBlock
-                                Style="{ThemeResource SubtitleTextBlockStyle}"
-                                Text="Visual seat guide mount" />
-                            <TextBlock
-                                Style="{StaticResource SectionCaptionTextStyle}"
-                                Text="The actual modal should be opened from the event summary area. This preview reserves the seat-map composition and state legend." />
-                            <Button HorizontalAlignment="Left" Content="Visual seat guide" />
-                            <Border
-                                Padding="20"
-                                Background="#FFEFE6D5"
-                                CornerRadius="8">
-                                <StackPanel Spacing="14">
-                                    <Border
-                                        Padding="8"
-                                        Background="#FF233645"
-                                        CornerRadius="8">
-                                        <TextBlock
-                                            HorizontalAlignment="Center"
-                                            Foreground="White"
-                                            Text="Screen" />
-                                    </Border>
-                                    <StackPanel Spacing="8">
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-                                            <Border Width="26" Height="26" Background="#FF8FC2A1" CornerRadius="8" />
-                                            <Border Width="26" Height="26" Background="#FFE2B36A" CornerRadius="8" />
-                                            <Border Width="26" Height="26" Background="#FFD06A73" CornerRadius="8" />
-                                            <Border Width="26" Height="26" Background="#FF8FC2A1" CornerRadius="8" />
-                                            <Border Width="26" Height="26" Background="#FF8FC2A1" CornerRadius="8" />
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-                                            <Border Width="26" Height="26" Background="#FF8FC2A1" CornerRadius="8" />
-                                            <Border Width="26" Height="26" Background="#FF8FC2A1" CornerRadius="8" />
-                                            <Border Width="26" Height="26" Background="#FFE2B36A" CornerRadius="8" />
-                                            <Border Width="26" Height="26" Background="#FFE2B36A" CornerRadius="8" />
-                                            <Border Width="26" Height="26" Background="#FF8FC2A1" CornerRadius="8" />
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-                                            <Border Width="26" Height="26" Background="#FFD06A73" CornerRadius="8" />
-                                            <Border Width="26" Height="26" Background="#FFE2B36A" CornerRadius="8" />
-                                            <Border Width="26" Height="26" Background="#FF8FC2A1" CornerRadius="8" />
-                                            <Border Width="26" Height="26" Background="#FF8FC2A1" CornerRadius="8" />
-                                            <Border Width="26" Height="26" Background="#FF8FC2A1" CornerRadius="8" />
-                                        </StackPanel>
-                                    </StackPanel>
-                                    <TextBlock
-                                        Style="{StaticResource SectionCaptionTextStyle}"
-                                        Text="Green, amber, and red seats are placeholders for quality and availability state. Add the Sweet Spot marker in this map layer." />
-                                </StackPanel>
-                            </Border>
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}" Text="Available screenings"/>
+                            <ComboBox x:Name="ScreeningCombo"
+                                      HorizontalAlignment="Stretch"
+                                      ItemsSource="{x:Bind ViewModel.Screenings, Mode=OneWay}"
+                                      SelectedItem="{x:Bind ViewModel.SelectedScreening, Mode=TwoWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="models:Screening">
+                                        <TextBlock Text="{x:Bind ScreeningTime, Converter={StaticResource ScreeningTimeFormat}}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Text="Select a screening to load its event details and seat capacity."/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}" Text="Seats"/>
+                            <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Text="Open the visual guide to pick your seats. Booked seats are shown grayed out and cannot be selected."/>
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <Button x:Name="OpenSeatGuideButton"
+                                        Click="OpenSeatGuide_Click"
+                                        Content="Visual seat guide"
+                                        IsEnabled="{x:Bind ViewModel.HasEvent, Mode=OneWay}"/>
+                                <TextBlock VerticalAlignment="Center">
+                                    <Run Text="Selected:"/>
+                                    <Run Text="{x:Bind ViewModel.SelectedSeatCount, Mode=OneWay}"/>
+                                    <Run Text=" / "/>
+                                    <Run Text="{x:Bind ViewModel.SeatCapacity, Mode=OneWay}"/>
+                                </TextBlock>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </StackPanel>
 
-                <StackPanel
-                    Grid.Column="1"
-                    Spacing="16">
-                    <Border Style="{StaticResource SurfaceCardStyle}">
-                        <StackPanel Spacing="12">
-                            <TextBlock
-                                Style="{ThemeResource SubtitleTextBlockStyle}"
-                                Text="Checkout mount" />
-                            <TextBlock
-                                Style="{StaticResource SectionCaptionTextStyle}"
-                                Text="Use this column for paid-event checkout, free enrollment, duplicate-join protection, and final-price calculation." />
-                            <TextBox Header="Ticket price" Text="49.99" />
-                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
-                                <TextBox x:Name="ReferralCodeTextBox" Header="Referral code" PlaceholderText="Optional code" Width="200" />
-                                <Button x:Name="ValidateReferralCodeButton" Click="ValidateReferralCodeButton_Click" VerticalAlignment="Bottom" Height="32">
-                                    <FontIcon Glyph="&#xE73E;" FontSize="14" />
-                                </Button>
+                <StackPanel Grid.Column="1" Spacing="16">
+
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}" Text="Checkout"/>
+
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Base price" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    <TextBlock Text="{x:Bind ViewModel.BasePrice, Mode=OneWay}" FontWeight="SemiBold"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="Final price" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    <TextBlock Text="{x:Bind ViewModel.FinalPrice, Mode=OneWay}" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <CheckBox Content="Apply free-enrollment reward"
+                                      IsChecked="{x:Bind ViewModel.ApplyFreeEnrollment, Mode=TwoWay}"/>
+                            <CheckBox Content="Apply trivia free-ticket reward"
+                                      IsChecked="{x:Bind ViewModel.ApplyTriviaReward, Mode=TwoWay}"/>
+                            <CheckBox IsChecked="{x:Bind ViewModel.ApplySlotMachineDiscount, Mode=TwoWay}"
+                                      IsEnabled="{x:Bind ViewModel.HasSlotMachineDiscount, Mode=OneWay}">
+                                <CheckBox.Content>
+                                    <TextBlock>
+                                        <Run Text="Apply slot-machine movie discount ("/>
+                                        <Run Text="{x:Bind ViewModel.SlotMachineDiscountPercent, Mode=OneWay}"/>
+                                        <Run Text="%)"/>
+                                    </TextBlock>
+                                </CheckBox.Content>
+                            </CheckBox>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Referral code" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox PlaceholderText="Optional code"
+                                             Text="{x:Bind ViewModel.ReferralCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <Button Grid.Column="1" Content="Validate" Click="ValidateReferral_Click"/>
+                                </Grid>
+                                <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="{x:Bind ViewModel.ReferralStatus, Mode=OneWay}"/>
                             </StackPanel>
-                            <CheckBox Content="Apply free-enrollment reward" />
-                            <CheckBox Content="Apply trivia free ticket reward" />
-                            <CheckBox Content="Apply slot-machine movie discount" />
-                            <Button Content="Recalculate total" />
-                            <TextBox Header="Final price" Text="Never below 0.00" />
+
+                            <ToggleSwitch Header="Watch price"
+                                          IsOn="{x:Bind ViewModel.IsWatchingPrice, Mode=OneWay}"
+                                          Toggled="WatchPrice_Toggled"
+                                          IsEnabled="{x:Bind ViewModel.HasEvent, Mode=OneWay}"/>
+
+                            <Button Content="Confirm purchase"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    HorizontalAlignment="Stretch"
+                                    Click="ConfirmPurchase_Click"
+                                    IsEnabled="{x:Bind ViewModel.CanPurchase, Mode=OneWay}"/>
+
+                            <TextBlock FontSize="12"
+                                       Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                                       Visibility="{x:Bind ViewModel.HasUserJoined, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
+                                       Text="You have already joined this event. Duplicate purchases are blocked."/>
                         </StackPanel>
                     </Border>
 
-                    <Border Style="{StaticResource StrongSurfaceCardStyle}">
-                        <StackPanel Spacing="10">
-                            <TextBlock
-                                Style="{ThemeResource SubtitleTextBlockStyle}"
-                                Text="Participation guardrails" />
-                            <TextBlock
-                                Style="{StaticResource SectionCaptionTextStyle}"
-                                Text="Record participation after successful join or purchase and block duplicate participation for the same event from this state owner." />
-                        </StackPanel>
-                    </Border>
                 </StackPanel>
             </Grid>
         </StackPanel>

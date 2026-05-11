@@ -78,13 +78,20 @@ public class RemoteMarathonService : IMarathonService
     public async Task<IEnumerable<LeaderboardEntry>> GetLeaderboardWithUsernamesAsync(int marathonId) => 
         await this.apiClient.GetAsync<IEnumerable<LeaderboardEntry>>($"api/marathons/{marathonId}/leaderboard") ?? new List<LeaderboardEntry>();
     
-    public Task<MarathonProgress?> GetCurrentProgressAsync(int marathonIdentifier) => throw new NotImplementedException();
-    public Task UpdateQuizResultAsync(int marathonIdentifier, int correctAnswersCount) => throw new NotImplementedException();
-    public Task<bool> LogMovieAsync(int marathonIdentifier, int movieIdentifier, int correctAnswersCount) => throw new NotImplementedException();
-    public Task<int> GetParticipantCountAsync(int marathonId) => throw new NotImplementedException();
-    public Task<int> GetMarathonMovieCountAsync(int marathonId) => throw new NotImplementedException();
-    public Task<bool> IsPrerequisiteCompletedAsync(int userId, int marathonId) => throw new NotImplementedException();
-    public Task<IEnumerable<LeaderboardEntry>> GetLeaderboardAsync(int marathonId) => throw new NotImplementedException();
+    public Task<MarathonProgress?> GetCurrentProgressAsync(int marathonIdentifier) => 
+        this.GetUserProgressAsync(App.CurrentUserId, marathonIdentifier);
+    public async Task UpdateQuizResultAsync(int marathonIdentifier, int correctAnswersCount) => 
+        await this.apiClient.PostAsync<object>($"api/marathons/{marathonIdentifier}/quiz", correctAnswersCount);
+    public async Task<bool> LogMovieAsync(int marathonIdentifier, int movieIdentifier, int correctAnswersCount) => 
+        await this.apiClient.PostAsync<int, bool>($"api/marathons/{marathonIdentifier}/movies/{movieIdentifier}/log", correctAnswersCount);
+    public async Task<int> GetParticipantCountAsync(int marathonId) => 
+        await this.apiClient.GetAsync<int>($"api/marathons/{marathonId}/participants/count");
+    public async Task<int> GetMarathonMovieCountAsync(int marathonId) => 
+        await this.apiClient.GetAsync<int>($"api/marathons/{marathonId}/movies/count");
+    public async Task<bool> IsPrerequisiteCompletedAsync(int userId, int marathonId) => 
+        await this.apiClient.GetAsync<bool>($"api/marathons/{marathonId}/prerequisite/{userId}");
+    public Task<IEnumerable<LeaderboardEntry>> GetLeaderboardAsync(int marathonId) => 
+        this.GetLeaderboardWithUsernamesAsync(marathonId);
 }
 
 // --- Notification Service ---

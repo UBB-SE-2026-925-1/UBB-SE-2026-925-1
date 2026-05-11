@@ -13,14 +13,29 @@ public static class DbInitializer
     {
         context.Database.EnsureCreated();
 
-        await context.Database.ExecuteSqlRawAsync(
-            """
-            IF OBJECT_ID(N'[Badges]', N'U') IS NOT NULL
-               AND COL_LENGTH(N'[Badges]', N'Description') IS NULL
-            BEGIN
-                ALTER TABLE [Badges] ADD [Description] nvarchar(300) NOT NULL CONSTRAINT [DF_Badges_Description] DEFAULT N'';
-            END
-            """);
+        // Ensure SeatBookings table exists on databases created before this entity was added.
+        // EnsureCreated() does not add tables to an already-created schema.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'SeatBookings')
+BEGIN
+    CREATE TABLE [SeatBookings] (
+        [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        [ScreeningId] INT NOT NULL,
+        [UserId] INT NOT NULL,
+        [Row] INT NOT NULL,
+        [Column] INT NOT NULL,
+        [BookedAt] DATETIME2 NOT NULL,
+        CONSTRAINT [UQ_SeatBookings_Screening_Seat] UNIQUE ([ScreeningId], [Row], [Column])
+    );
+    CREATE INDEX [IX_SeatBookings_ScreeningId] ON [SeatBookings] ([ScreeningId]);
+END");
+        }
+        catch
+        {
+            // Non-fatal: if the provider doesn't support the IF block (e.g. tests with InMemory), ignore.
+        }
 
         // Smart seeding will handle duplicates/missing data below
 
@@ -113,10 +128,12 @@ public static class DbInitializer
         // 4.5 Seed Events
         if (!await context.Events.AnyAsync())
         {
-            var movie = await context.Movies.FirstAsync();
+            var adminUserForEvents = await context.Users.FirstOrDefaultAsync(u => u.AuthProvider == "Seed" && u.AuthSubject == "Admin");
+            int creatorId = adminUserForEvents?.Id ?? 1;
+
             var events = new List<Event>
             {
-                new() 
+                new Event 
                 { 
                     Id = 0,
                     Title = "The Shawshank Redemption Screening", 
@@ -126,22 +143,93 @@ public static class DbInitializer
                     TicketPrice = 15.00m, 
                     EventType = "Marathon",
                     MaxCapacity = 100,
-                    CreatorUserId = 1 
+                    CreatorUserId = creatorId 
                 },
-                new() 
+                new Event 
                 { 
                     Id = 0,
                     Title = "Action Movie Night", 
-                    Description = "A night of action movies.", 
+                    Description = "A night of intense action with the latest blockbusters.", 
                     EventDateTime = DateTime.Now.AddDays(14), 
                     LocationReference = "Cinema City, Hall 5", 
                     TicketPrice = 25.00m, 
                     EventType = "Premiere",
                     MaxCapacity = 200,
-                    CreatorUserId = 2
+                    CreatorUserId = creatorId
+                },
+                new Event
+                {
+                    Id = 0,
+                    Title = "Sci-Fi Sunday: Inception",
+                    Description = "Experience the mind-bending masterpiece on the big screen.",
+                    EventDateTime = DateTime.Now.AddDays(2),
+                    LocationReference = "Galaxy IMAX",
+                    TicketPrice = 18.50m,
+                    EventType = "Outdoor screening",
+                    MaxCapacity = 150,
+                    CreatorUserId = creatorId
+                },
+                new Event
+                {
+                    Id = 0,
+                    Title = "Classic Cinema: Pulp Fiction",
+                    Description = "Tarantino's masterpiece in 4K.",
+                    EventDateTime = DateTime.Now.AddDays(10),
+                    LocationReference = "Retro Cinema, Hall A",
+                    TicketPrice = 12.00m,
+                    EventType = "Marathon",
+                    MaxCapacity = 80,
+                    CreatorUserId = creatorId
+                },
+                new Event
+                {
+                    Id = 0,
+                    Title = "Horror Midnight Special",
+                    Description = "Don't come alone.",
+                    EventDateTime = DateTime.Now.AddDays(5),
+                    LocationReference = "Dark Hall, Basement",
+                    TicketPrice = 10.00m,
+                    EventType = "Premiere",
+                    MaxCapacity = 50,
+                    CreatorUserId = creatorId
                 }
             };
             context.Events.AddRange(events);
+            await context.SaveChangesAsync();
+        }
+
+        // 4.6 Seed Screenings — 3 future showtimes per movie, distributed across the available events.
+        var allMoviesForScreenings = await context.Movies.ToListAsync();
+        var allEventsForScreenings = await context.Events.OrderBy(e => e.Id).ToListAsync();
+        if (allMoviesForScreenings.Any() && allEventsForScreenings.Any())
+        {
+            var rng = new Random(42);
+            var baseDate = DateTime.Now.Date.AddHours(19); // 7 PM today as anchor
+            int eventCursor = 0;
+
+            foreach (var m in allMoviesForScreenings)
+            {
+                int existing = await context.Screenings.CountAsync(s => s.MovieId == m.Id);
+                if (existing >= 3) continue;
+
+                int toCreate = 3 - existing;
+                for (int i = 0; i < toCreate; i++)
+                {
+                    var ev = allEventsForScreenings[eventCursor % allEventsForScreenings.Count];
+                    eventCursor++;
+
+                    int dayOffset = 1 + (existing + i) * 2 + rng.Next(0, 2);
+                    int hourOffset = rng.Next(0, 4); // 19:00 .. 22:00
+
+                    context.Screenings.Add(new Screening
+                    {
+                        Id = 0,
+                        MovieId = m.Id,
+                        EventId = ev.Id,
+                        ScreeningTime = baseDate.AddDays(dayOffset).AddHours(hourOffset),
+                    });
+                }
+            }
             await context.SaveChangesAsync();
         }
 

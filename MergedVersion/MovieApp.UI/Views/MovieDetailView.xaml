@@ -108,6 +108,12 @@
                                         <TextBlock Text="Screening" FontWeight="SemiBold"/>
                                         <TextBlock Text="{x:Bind ScreeningTime}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                     </StackPanel>
+                                    <Button Grid.Column="1"
+                                            Content="Tickets"
+                                            Tag="{x:Bind}"
+                                            Click="ScreeningTicketsButton_Click"
+                                            VerticalAlignment="Center"
+                                            Style="{ThemeResource AccentButtonStyle}"/>
                                 </Grid>
                             </Border>
                         </DataTemplate>

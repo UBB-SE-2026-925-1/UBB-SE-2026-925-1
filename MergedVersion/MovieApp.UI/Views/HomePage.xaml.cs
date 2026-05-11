@@ -36,9 +36,9 @@ public sealed partial class HomePage : Page
     /// </exception>
     public HomePage()
     {
-        if (App.Services.EventRepository == null || App.Services.ReferralValidator == null)
+        if (App.Services.EventRepository == null)
         {
-            throw new InvalidOperationException("Required repositories are not initialized.");
+            throw new InvalidOperationException("EventRepository is not initialized.");
         }
 
         this.ViewModel = new HomeEventsViewModel(App.Services.EventRepository);
@@ -75,29 +75,44 @@ public sealed partial class HomePage : Page
         {
             this.initialized = true;
 
-            if (this.IsAmbassadorSystemAvailable())
+            try
             {
-                if (App.Services.AmbassadorRepository is null)
+                if (this.IsAmbassadorSystemAvailable())
                 {
-                    throw new NullReferenceException("Ambassador repository is not initalized.");
-                }
+                    if (App.Services.AmbassadorRepository is null)
+                    {
+                        throw new NullReferenceException("Ambassador repository is not initialized.");
+                    }
 
-                var currentUser = App.Services.CurrentUserService!.CurrentUser;
-                string? existingCode =
-                    await App.Services.AmbassadorRepository.GetReferralCodeAsync(currentUser.Id);
-                if (string.IsNullOrEmpty(existingCode))
-                {
-                    MovieApp.Core.Services.ReferralCodeGenerator generator =
-                        new MovieApp.Core.Services.ReferralCodeGenerator();
-                    string newCode = generator.Generate(currentUser.Username, currentUser.Id);
-                    await App.Services.AmbassadorRepository.CreateAmbassadorProfileAsync(
-                        currentUser.Id,
-                        newCode);
+                    User currentUser = App.Services.CurrentUserService!.CurrentUser;
+                    string? existingCode =
+                        await App.Services.AmbassadorRepository.GetReferralCodeAsync(currentUser.Id);
+                    if (string.IsNullOrEmpty(existingCode))
+                    {
+                        MovieApp.Core.Services.ReferralCodeGenerator generator =
+                            new MovieApp.Core.Services.ReferralCodeGenerator();
+                        string newCode = generator.Generate(currentUser.Username, currentUser.Id);
+                        await App.Services.AmbassadorRepository.CreateAmbassadorProfileAsync(
+                            currentUser.Id,
+                            newCode);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($">>> Ambassador setup error: {ex.Message}");
             }
         }
 
-        await this.ViewModel.InitializeAsync();
+        try
+        {
+            await this.ViewModel.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            if (ex.InnerException != null)
+                System.Diagnostics.Debug.WriteLine($">>> Inner: {ex.InnerException.Message}");
+        }
     }
 
     /// <summary>

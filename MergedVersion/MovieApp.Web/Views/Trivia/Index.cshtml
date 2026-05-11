@@ -1,0 +1,146 @@
+@model TriviaIndexViewModel
+@{
+    ViewData["Title"] = "Trivia";
+}
+
+<style>
+    .option-btn {
+        text-align: left;
+        width: 100%;
+        padding: .85rem 1rem;
+        margin-bottom: .5rem;
+    }
+
+    .option-btn.correct {
+        background-color: #198754 !important;
+        color: white;
+        border-color: #198754;
+    }
+
+    .option-btn.incorrect {
+        background-color: #dc3545 !important;
+        color: white;
+        border-color: #dc3545;
+    }
+
+    .option-letter {
+        display: inline-block;
+        width: 1.5rem;
+        height: 1.5rem;
+        background: rgba(0,0,0,.1);
+        border-radius: 50%;
+        text-align: center;
+        margin-right: .5rem;
+        font-weight: bold;
+    }
+</style>
+
+@* ── Header ──────────────────────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+        <h1 class="mb-1">Trivia Wheel</h1>
+        <p class="text-muted mb-0">Answer correctly to earn a trivia reward.</p>
+    </div>
+    <form asp-action="Index" method="get" class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 small text-muted">Category:</label>
+        <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">Random</option>
+            @foreach (var cat in Model.AvailableCategories)
+            {
+                if (cat == Model.Category)
+                {
+                    <option value="@cat" selected>@cat</option>
+                }
+                else
+                {
+                    <option value="@cat">@cat</option>
+                }
+            }
+        </select>
+    </form>
+</div>
+
+@* ── Question card ───────────────────────────────────────────────────────── *@
+@if (Model.Question is null)
+{
+    <div class="alert alert-warning">
+        No questions available in <strong>@Model.Category</strong> yet. Try another category.
+    </div>
+}
+else
+{
+<div class="card shadow-sm">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <span class="badge bg-warning text-dark">@Model.Category</span>
+        @if (Model.AnswerSubmitted)
+        {
+            <span class="badge @(Model.IsCorrect ? "bg-success" : "bg-danger")">
+                @(Model.IsCorrect ? "Correct" : "Incorrect")
+            </span>
+        }
+    </div>
+    <div class="card-body">
+        <h4 class="mb-4">@Model.Question.QuestionText</h4>
+
+        <form asp-action="Answer" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="QuestionId" value="@Model.Question.Id" />
+            <input type="hidden" name="Category" value="@Model.Category" />
+
+            @{
+                var options = new (char Letter, string Text)[]
+                {
+                    ('A', Model.Question.OptionA),
+                    ('B', Model.Question.OptionB),
+                    ('C', Model.Question.OptionC),
+                    ('D', Model.Question.OptionD),
+                };
+            }
+
+            @foreach (var (letter, text) in options)
+            {
+                string css = "btn btn-outline-secondary option-btn";
+                if (Model.AnswerSubmitted)
+                {
+                    if (letter == Model.CorrectOption)
+                    {
+                        css += " correct";
+                    }
+                    else if (letter == Model.SelectedOption && !Model.IsCorrect)
+                    {
+                        css += " incorrect";
+                    }
+                }
+
+                <button type="submit" name="SelectedOption" value="@letter"
+                        class="@css"
+                        @(Model.AnswerSubmitted ? "disabled" : "")>
+                    <span class="option-letter">@letter</span>
+                    @text
+                </button>
+            }
+        </form>
+
+        @if (Model.AnswerSubmitted)
+        {
+            <div class="alert @(Model.IsCorrect ? "alert-success" : "alert-danger") mt-3">
+                @Model.FeedbackMessage
+            </div>
+
+            @if (Model.IsCorrect && Model.RewardGranted)
+            {
+                <div class="alert alert-warning">
+                    <strong>Reward unlocked!</strong> A new trivia reward was added to your collection.
+                </div>
+            }
+
+            <a asp-action="Index" asp-route-category="@Model.Category" class="btn btn-primary">
+                Next question
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                Random category
+            </a>
+        }
+    </div>
+</div>
+}

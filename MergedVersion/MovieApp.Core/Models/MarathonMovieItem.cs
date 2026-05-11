@@ -9,6 +9,15 @@ namespace MovieApp.Core.Models;
 /// </summary>
 public sealed class MarathonMovieItem
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MarathonMovieItem"/> class.
+    /// This constructor is required for XAML infrastructure.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    public MarathonMovieItem()
+    {
+    }
+
     private const double FullVisibility = 1.0;
     private const double ZeroVisibility = 0.0;
 

@@ -74,7 +74,6 @@ public sealed partial class MainWindow : Window
 
             case "Home":
                 var homeView = new HomePage();
-                homeView.DataContext = App.ServiceProvider.GetRequiredService<MovieApp.UI.ViewModels.Events.HomeEventsViewModel>();
                 view = homeView;
                 break;
 
@@ -153,11 +152,32 @@ public sealed partial class MainWindow : Window
     {
         var vm = App.ServiceProvider.GetRequiredService<MovieDetailViewModel>();
         MovieDetailViewControl.DataContext = vm;
-        
+
         // Handle back navigation
         vm.NavigateBack += () => MovieDetailOverlay.Visibility = Visibility.Collapsed;
-        
+
         await vm.LoadMovieAsync(movie);
         MovieDetailOverlay.Visibility = Visibility.Visible;
+    }
+
+    public async void ShowDetailsCheckout(Movie movie, Screening screening)
+    {
+        try
+        {
+            MovieDetailOverlay.Visibility = Visibility.Collapsed;
+
+            var page = new DetailsCheckoutPage();
+            ContentFrame.Content = page;
+
+            await page.InitializeAsync(movie, screening, () =>
+            {
+                // Return to catalog when the user backs out of the checkout page.
+                AppNavigationView.SelectedItem = AppNavigationView.MenuItems[0];
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"ShowDetailsCheckout failed: {ex}");
+        }
     }
 }

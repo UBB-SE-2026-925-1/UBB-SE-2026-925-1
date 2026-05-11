@@ -55,7 +55,7 @@ public class CatalogViewModel : ViewModelBase
     /// <summary>Gets the list of available genres.</summary>
     public ObservableCollection<string> Genres { get; } = new ()
     {
-        "All Genres", "Action", "Comedy", "Crime", "Drama", "Sci-Fi", "Science Fiction", "Horror", "Thriller", "Adventure"
+        "All Genres", "Action", "Adventure", "Animation", "Comedy", "Drama", "Horror", "Mystery", "Romance", "Science Fiction", "Thriller"
     };
 
     /// <summary>Gets or sets the search query text.</summary>
@@ -207,12 +207,4 @@ public class CatalogViewModel : ViewModelBase
         }
     }
 
-    private void OnSelectMovie(object? param)
-    {
-        if (param is Movie movie)
-        {
-            this.SelectedMovie = movie;
-            this.MovieSelected?.Invoke(movie);
-        }
-    }
 }

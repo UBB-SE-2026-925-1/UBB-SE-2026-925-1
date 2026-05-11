@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:MovieApp.UI.Controls"
     mc:Ignorable="d">
 
     <UserControl.Resources>
@@ -31,6 +32,10 @@
                 Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                 CornerRadius="8,8,0,0">
                 <Grid>
+                    <Image
+                        Stretch="UniformToFill"
+                        Opacity="0.6"
+                        Source="{x:Bind Model.PosterUrl, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}" />  
                     <StackPanel 
                         Orientation="Horizontal" 
                         HorizontalAlignment="Right" 
@@ -216,7 +221,7 @@
                             Text="Capacity" />
                         <TextBlock
                             FontWeight="SemiBold"
-                            Text="{x:Bind CapacityText, Mode=OneTime}" />
+                            Text="{x:Bind CapacityText, Mode=OneWay}" />
                     </StackPanel>
                 </Grid>
 

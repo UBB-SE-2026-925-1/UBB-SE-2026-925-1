@@ -31,7 +31,7 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
     /// </summary>
     public static readonly DependencyProperty ModelProperty = DependencyProperty.Register(
         nameof(Model),
-        typeof(object),
+        typeof(Event),
         typeof(EventCard),
         new PropertyMetadata(null, OnEventChanged));
 
@@ -74,9 +74,9 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
     /// Gets or sets the underlying model object bound to the card.
     /// </summary>
     /// <returns>The bound model instance.</returns>
-    public object? Model
+    public Event? Model
     {
-        get => this.GetValue(ModelProperty);
+        get => (Event?)this.GetValue(ModelProperty);
         set => this.SetValue(ModelProperty, value);
     }
 
@@ -111,35 +111,35 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
     }
 
     /// <summary>Gets the formatted title text.</summary>
-    public string TitleText => GetTitleText(this.EventModel);
+    public string TitleText => GetTitleText(this.Model);
 
     /// <summary>Gets the formatted description text.</summary>
-    public string DescriptionText => GetDescriptionText(this.EventModel);
+    public string DescriptionText => GetDescriptionText(this.Model);
 
     /// <summary>Gets the formatted event type text.</summary>
-    public string EventTypeText => GetEventTypeText(this.EventModel);
+    public string EventTypeText => GetEventTypeText(this.Model);
 
     /// <summary>Gets the formatted day badge text.</summary>
-    public string DateBadgeDay => GetDateBadgeDay(this.EventModel, CultureInfo.CurrentCulture);
+    public string DateBadgeDay => GetDateBadgeDay(this.Model, CultureInfo.CurrentCulture);
 
     /// <summary>Gets the formatted schedule text.</summary>
-    public string ScheduleText => GetScheduleText(this.EventModel, CultureInfo.CurrentCulture);
+    public string ScheduleText => GetScheduleText(this.Model, CultureInfo.CurrentCulture);
 
     /// <summary>Gets the formatted location text.</summary>
-    public string LocationText => GetLocationText(this.EventModel);
+    public string LocationText => GetLocationText(this.Model);
 
     /// <summary>Gets the formatted price text including discounts.</summary>
     public string PriceText =>
-        GetDiscountedPriceText(this.EventModel, CultureInfo.CurrentCulture, this.DiscountPercentage);
+        GetDiscountedPriceText(this.Model, CultureInfo.CurrentCulture, this.DiscountPercentage);
 
     /// <summary>Gets the formatted rating text.</summary>
-    public string RatingText => GetRatingText(this.EventModel);
+    public string RatingText => GetRatingText(this.Model);
 
     /// <summary>Gets the formatted capacity text.</summary>
-    public string CapacityText => GetCapacityText(this.EventModel);
+    public string CapacityText => GetCapacityText(this.Model);
 
     /// <summary>Gets the current event status text.</summary>
-    public string StatusText => GetStatusText(this.EventModel, DateTime.Now);
+    public string StatusText => GetStatusText(this.Model, DateTime.Now);
 
     /// <summary>
     /// Gets the glyph used for the favorite icon.
@@ -160,17 +160,17 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
     {
         get
         {
-            if (this.EventModel is null)
+            if (this.Model is null)
             {
                 return (Brush)this.Resources["StatusPendingBrush"];
             }
 
-            if (this.EventModel.EventDateTime <= DateTime.Now)
+            if (this.Model.EventDateTime <= DateTime.Now)
             {
                 return (Brush)this.Resources["StatusEndedBrush"];
             }
 
-            if (this.EventModel.AvailableSpots <= 0)
+            if (this.Model.AvailableSpots <= 0)
             {
                 return (Brush)this.Resources["StatusSoldOutBrush"];
             }
@@ -197,10 +197,6 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
     /// <summary>Gets the discount badge text.</summary>
     public string DiscountBadgeText => $"-{this.DiscountPercentage}%";
 
-    /// <summary>
-    /// Gets the event model cast from <see cref="Model"/>.
-    /// </summary>
-    private Event? EventModel => this.Model as Event;
 
     /// <summary>
     /// Returns the formatted title text.
@@ -358,8 +354,8 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
     {
         if (dependencyObject is EventCard card)
         {
-            card.IsJoined = false;
-            card.IsFavorited = false;
+            card.IsJoined = card.Model?.IsJoined ?? false;
+            card.IsFavorited = false; // This is updated asynchronously by the service if needed
             card.RefreshComputedProperties();
         }
     }
@@ -369,7 +365,6 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
         if (dependencyObject is EventCard card)
         {
             card.Bindings.Update();
-            card.PropertyChanged?.Invoke(card, new System.ComponentModel.PropertyChangedEventArgs(string.Empty));
         }
     }
 
@@ -377,7 +372,7 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
     {
         try
         {
-            if (this.EventModel == null || App.Services.WatchlistPathProvider == null)
+            if (this.Model == null || App.Services.WatchlistPathProvider == null)
             {
                 return;
             }
@@ -418,8 +413,8 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
                     {
                         bool success = await repo.AddWatchAsync(new WatchedEvent
                         {
-                            EventId = this.EventModel.Id,
-                            EventTitle = this.EventModel.Title,
+                            EventId = this.Model.Id,
+                            EventTitle = this.Model.Title,
                             TargetPrice = targetPrice,
                         });
 
@@ -450,7 +445,7 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
             }
             else
             {
-                await repo.RemoveWatchAsync(this.EventModel.Id);
+                await repo.RemoveWatchAsync(this.Model.Id);
             }
         }
         catch (Exception ex)
@@ -461,7 +456,7 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
 
     private async void FavoriteButton_Click(object sender, RoutedEventArgs e)
     {
-        if (this.EventModel == null || App.Services.FavoriteEventService == null)
+        if (this.Model == null || App.Services.FavoriteEventService == null)
         {
             return;
         }
@@ -469,12 +464,12 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
         if (this.IsFavorited)
         {
             await App.Services.FavoriteEventService
-                .RemoveFavoriteAsync(App.CurrentUserId, this.EventModel.Id);
+                .RemoveFavoriteAsync(App.CurrentUserId, this.Model.Id);
         }
         else
         {
             await App.Services.FavoriteEventService
-                .AddFavoriteAsync(App.CurrentUserId, this.EventModel.Id);
+                .AddFavoriteAsync(App.CurrentUserId, this.Model.Id);
         }
 
         this.IsFavorited = !this.IsFavorited;
@@ -484,7 +479,6 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
     private void RefreshComputedProperties()
     {
         this.Bindings.Update();
-        this.PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(string.Empty));
         _ = this.SyncWatcherStateAsync();
         _ = this.SyncJoinedStateAsync();
         _ = this.SyncFavoriteStateAsync();
@@ -492,44 +486,44 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
 
     private async Task SyncJoinedStateAsync()
     {
-        if (this.EventModel == null || App.Services.EventUserStateService == null)
+        if (this.Model == null || App.Services.EventUserStateService == null)
         {
             return;
         }
 
         bool joined =
-            await App.Services.EventUserStateService.IsEventJoinedByUserAsync(this.EventModel.Id);
+            await App.Services.EventUserStateService.IsEventJoinedByUserAsync(this.Model.Id);
         this.IsJoined = joined;
         this.Bindings.Update();
     }
 
     private async Task SyncFavoriteStateAsync()
     {
-        if (this.EventModel == null || App.Services.FavoriteEventService == null)
+        if (this.Model == null || App.Services.FavoriteEventService == null)
         {
             return;
         }
 
         this.IsFavorited = await App.Services.FavoriteEventService
-            .ExistsFavoriteAsync(App.CurrentUserId, this.EventModel.Id);
+            .ExistsFavoriteAsync(App.CurrentUserId, this.Model.Id);
         this.Bindings.Update();
     }
 
     private async Task SyncWatcherStateAsync()
     {
-        if (this.EventModel == null || this.WatcherButton == null)
+        if (this.Model == null || this.WatcherButton == null)
         {
             return;
         }
 
         var repo = App.ServiceProvider.GetRequiredService<IPriceWatcherRepository>();
 
-        this.WatcherButton.IsChecked = await repo.IsWatchingAsync(this.EventModel.Id);
+        this.WatcherButton.IsChecked = await repo.IsWatchingAsync(this.Model.Id);
     }
 
     private async void JoinEventButton_Click(object sender, RoutedEventArgs e)
     {
-        if (this.EventModel is null || App.Services.EventJoinService is null)
+        if (this.Model is null || App.Services.EventJoinService is null)
         {
             return;
         }
@@ -539,10 +533,11 @@ public sealed partial class EventCard : UserControl, System.ComponentModel.INoti
 
         string tag = button.Tag?.ToString() ?? string.Empty;
         JoinEventResult result =
-            await App.Services.EventJoinService.JoinEventAsync(this.EventModel.Id, tag);
+            await App.Services.EventJoinService.JoinEventAsync(this.Model.Id, tag);
 
         if (result.Success)
         {
+            this.Model.CurrentEnrollment += 1;
             this.IsJoined = true;
             this.Bindings.Update();
         }

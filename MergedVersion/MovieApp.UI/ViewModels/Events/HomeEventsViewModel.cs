@@ -109,14 +109,14 @@ public sealed class HomeEventsViewModel : EventListPageViewModel
         IEnumerable<Event> allEvents = await this.repository.GetAllAsync();
         List<Event> eventsList = allEvents.ToList();
 
-        if (App.Services.EventUserStateService is not null)
+        if (App.Services.UserEventAttendanceRepository is not null)
         {
+            int userId = App.CurrentUserId;
+            var joinedIds = await App.Services.UserEventAttendanceRepository.GetJoinedEventIdsAsync(userId);
+            var joinedSet = new HashSet<int>(joinedIds);
             foreach (Event @event in eventsList)
             {
-                @event.DiscountPercentage =
-                    await App.Services.EventUserStateService.GetDiscountForEventAsync(@event.Id);
-                @event.IsJoined =
-                    await App.Services.EventUserStateService.IsEventJoinedByUserAsync(@event.Id);
+                @event.IsJoined = joinedSet.Contains(@event.Id);
             }
         }
 
@@ -132,9 +132,9 @@ public sealed class HomeEventsViewModel : EventListPageViewModel
     {
         Dictionary<string, EventSection> sectionsByType = new Dictionary<string, EventSection>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (Event @event in events.Where(e => !string.IsNullOrWhiteSpace(e.EventType)))
+        foreach (Event @event in events)
         {
-            string eventType = @event.EventType.Trim();
+            string eventType = string.IsNullOrWhiteSpace(@event.EventType) ? "General" : @event.EventType.Trim();
             if (!sectionsByType.TryGetValue(eventType, out EventSection? section))
             {
                 section = new EventSection

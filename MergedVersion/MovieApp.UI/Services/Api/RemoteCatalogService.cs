@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -29,7 +30,8 @@ public class RemoteCatalogService : ICatalogService
 
     public async Task<List<Movie>> SearchMoviesAsync(string query, CancellationToken ct = default)
     {
-        var result = await this.apiClient.GetAsync<IEnumerable<Movie>>($"api/movies?query={query}", ct);
+        var encodedQuery = Uri.EscapeDataString(query);
+        var result = await this.apiClient.GetAsync<IEnumerable<Movie>>($"api/movies?query={encodedQuery}", ct);
         return result?.ToList() ?? new List<Movie>();
     }
 

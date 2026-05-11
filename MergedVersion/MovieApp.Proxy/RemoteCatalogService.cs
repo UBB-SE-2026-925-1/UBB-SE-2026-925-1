@@ -1,3 +1,4 @@
+using System.Globalization;
 using MovieApp.Core.Interfaces.Service;
 using MovieApp.Core.Models;
 
@@ -26,8 +27,10 @@ public class RemoteCatalogService : ICatalogService
 
     public async Task<List<Movie>> FilterMoviesAsync(List<Genre> genres, float minRating, CancellationToken ct = default)
     {
-        var genreQuery = string.Join(",", genres.Select(g => g.Name));
-        var result = await this.apiClient.GetAsync<IEnumerable<Movie>>($"api/movies?genres={genreQuery}&minRating={minRating}", ct);
+        // URL-encode each genre name and use invariant culture for the decimal separator
+        var genreQuery = string.Join(",", genres.Select(g => Uri.EscapeDataString(g.Name)));
+        var ratingStr = minRating.ToString(CultureInfo.InvariantCulture);
+        var result = await this.apiClient.GetAsync<IEnumerable<Movie>>($"api/movies?genres={genreQuery}&minRating={ratingStr}", ct);
         return result?.ToList() ?? new List<Movie>();
     }
 }

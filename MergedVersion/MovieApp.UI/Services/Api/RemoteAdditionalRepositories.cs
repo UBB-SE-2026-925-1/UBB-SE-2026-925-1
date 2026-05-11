@@ -33,7 +33,7 @@ public class RemoteAmbassadorRepository : IAmbassadorRepository
         await this.apiClient.PostAsync<object, bool>($"api/referrals/reward/apply", new { AmbassadorId = ambassadorId }, ct);
 
     public async Task<IEnumerable<ReferralHistoryItem>> GetReferralHistoryAsync(int ambassadorId, CancellationToken ct = default) => 
-        await this.apiClient.GetAsync<IEnumerable<ReferralHistoryItem>>($"api/referrals/user/{ambassadorId}/history", ct) ?? new List<ReferralHistoryItem>();
+        await this.apiClient.GetAsync<List<ReferralHistoryItem>>($"api/referrals/user/{ambassadorId}/history", ct) ?? new List<ReferralHistoryItem>();
 
     public async Task<int> GetRewardBalanceAsync(int userId, CancellationToken ct = default) => 
         await this.apiClient.GetAsync<int>($"api/referrals/user/{userId}/balance", ct);
@@ -51,13 +51,17 @@ public class RemoteScreeningRepository : IScreeningRepository
     private readonly ApiClient apiClient;
     public RemoteScreeningRepository(ApiClient apiClient) => this.apiClient = apiClient;
 
-    public async Task<IReadOnlyList<Screening>> GetByEventIdAsync(int eventIdentifier, CancellationToken ct = default) => 
+    public async Task<Screening?> GetByIdAsync(int screeningId, CancellationToken ct = default) =>
+        await this.apiClient.GetAsync<Screening>($"api/screenings/{screeningId}", ct);
+
+    public async Task<IReadOnlyList<Screening>> GetByEventIdAsync(int eventIdentifier, CancellationToken ct = default) =>
         (await this.apiClient.GetAsync<IEnumerable<Screening>>($"api/screenings/event/{eventIdentifier}", ct))?.ToList().AsReadOnly() ?? new List<Screening>().AsReadOnly();
 
     public async Task<IReadOnlyList<Screening>> GetByMovieIdAsync(int movieIdentifier, CancellationToken ct = default) => 
-        (await this.apiClient.GetAsync<IEnumerable<Screening>>($"api/screenings/movie/{movieIdentifier}", ct))?.ToList().AsReadOnly() ?? new List<Screening>().AsReadOnly();
+        (await this.apiClient.GetAsync<List<Screening>>($"api/screenings/movie/{movieIdentifier}", ct))?.AsReadOnly() ?? new List<Screening>().AsReadOnly();
 
-    public Task AddAsync(Screening screening, CancellationToken ct = default) => throw new NotImplementedException();
+    public Task AddAsync(Screening screening, CancellationToken ct = default) =>
+        this.apiClient.PostAsync<Screening>("api/screenings", screening, ct);
 }
 
 // --- UserMovieDiscount Repository ---
@@ -67,12 +71,13 @@ public class RemoteUserMovieDiscountRepository : IUserMovieDiscountRepository
     public RemoteUserMovieDiscountRepository(ApiClient apiClient) => this.apiClient = apiClient;
 
     public async Task<List<Reward>> GetDiscountsForUserAsync(int userId, CancellationToken ct = default) => 
-        (await this.apiClient.GetAsync<IEnumerable<Reward>>($"api/rewards/user/{userId}", ct))?.ToList() ?? new List<Reward>();
+        (await this.apiClient.GetAsync<List<Reward>>($"api/rewards/user/{userId}", ct)) ?? new List<Reward>();
 
     public Task MarkRedeemedAsync(int rewardId, CancellationToken ct = default) => 
         this.apiClient.PostAsync<object>($"api/rewards/{rewardId}/redeem", new { }, ct);
 
-    public Task AddAsync(Reward reward, CancellationToken ct = default) => throw new NotImplementedException();
+    public Task AddAsync(Reward reward, CancellationToken ct = default) =>
+        this.apiClient.PostAsync<Reward>("api/rewards", reward, ct);
 }
 
 // --- UserEventAttendance Repository ---
@@ -82,7 +87,7 @@ public class RemoteUserEventAttendanceRepository : IUserEventAttendanceRepositor
     public RemoteUserEventAttendanceRepository(ApiClient apiClient) => this.apiClient = apiClient;
 
     public async Task<IReadOnlyList<int>> GetJoinedEventIdsAsync(int userIdentifier, CancellationToken ct = default) => 
-        (await this.apiClient.GetAsync<IEnumerable<int>>($"api/events/user/{userIdentifier}/attendance", ct))?.ToList().AsReadOnly() ?? new List<int>().AsReadOnly();
+        (await this.apiClient.GetAsync<List<int>>($"api/events/user/{userIdentifier}/attendance", ct))?.AsReadOnly() ?? new List<int>().AsReadOnly();
 
     public Task JoinAsync(int userIdentifier, int eventIdentifier, CancellationToken ct = default) => 
         this.apiClient.PostAsync<object>($"api/events/user/{userIdentifier}/attendance/join?eventId={eventIdentifier}", new { }, ct);
