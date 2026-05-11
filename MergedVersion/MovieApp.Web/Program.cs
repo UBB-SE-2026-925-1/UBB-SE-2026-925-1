@@ -25,14 +25,11 @@ builder.Services.AddScoped<ICatalogService, RemoteCatalogService>();
 builder.Services.AddScoped<IReviewService, RemoteReviewService>();
 builder.Services.AddScoped<ICommentService, RemoteCommentService>();
 builder.Services.AddScoped<ICurrentUserService, RemoteCurrentUserService>();
-<<<<<<< P6_Screenings_and_Checkout
 builder.Services.AddScoped<IScreeningRepository, RemoteScreeningRepository>();
 builder.Services.AddScoped<IBookingRepository, RemoteBookingRepository>();
-=======
 builder.Services.AddScoped<ISlotMachineService, RemoteSlotMachineService>();
 builder.Services.AddScoped<ITriviaRepository, RemoteTriviaRepository>();
 builder.Services.AddScoped<ITriviaRewardRepository, RemoteTriviaRewardRepository>();
->>>>>>> main
 
 // ExternalReviewService is registered with no providers for now.
 // ASP.NET Core DI resolves IEnumerable<IExternalReviewProvider> as empty when
