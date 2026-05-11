@@ -39,7 +39,7 @@ public class SlotMachineController : Controller
 
         if (!viewModel.CanSpin)
         {
-            viewModel.StatusMessage = "No spins remaining — come back tomorrow!";
+            viewModel.StatusMessage = "No spins remaining - come back tomorrow!";
             return View(nameof(Index), viewModel);
         }
 
@@ -55,7 +55,7 @@ public class SlotMachineController : Controller
                 ? $"JACKPOT! You won a {result.DiscountPercentage}% discount" +
                   $" on \"{result.JackpotMovie?.Title}\"."
                 : result.MatchingEvents.Count > 0
-                    ? $"Nice spin — {result.MatchingEvents.Count} matching event(s) found."
+                    ? $"Nice spin - {result.MatchingEvents.Count} matching event(s) found."
                     : "No matching events this time. Try again!";
         }
         catch (Exception ex)

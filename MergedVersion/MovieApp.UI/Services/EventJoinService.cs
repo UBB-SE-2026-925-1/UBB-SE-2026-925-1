@@ -23,7 +23,7 @@ public sealed class EventJoinService : IEventJoinService
     /// </returns>
     public async Task<JoinEventResult> JoinEventAsync(int eventId, string buttonTag)
     {
-        User? user = App.Services.CurrentUserService?.CurrentUser;
+        var user = App.Services.CurrentUserService?.CurrentUser;
 
         if (user is null)
         {

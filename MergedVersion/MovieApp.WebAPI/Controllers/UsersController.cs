@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using MovieApp.Core.DTOs;
 using MovieApp.Core.Interfaces.Service;
 using MovieApp.Core.Models;
 using MovieApp.Core.Repositories;
 using MovieApp.Core.Services;
+using MovieApp.WebAPI.Controllers.DTOs;
 
 namespace MovieApp.WebAPI.Controllers;
 
@@ -22,24 +24,58 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("current")]
-    public async Task<ActionResult<User>> GetCurrentUser()
+    public async Task<ActionResult<CurrentUserDTO>> GetCurrentUser()
     {
-        var user = await this.userRepository.FindByAuthIdentityAsync("Seed", "Admin");
-        if (user == null) return NotFound();
-        return Ok(user);
+        var user = await this.userRepository
+            .FindByAuthIdentityAsync("Seed", "Admin");
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(new CurrentUserDTO
+        {
+            Id = user.Id,
+            Username = user.Username,
+            TotalPoints = user.UserStats?.TotalPoints ?? 0,
+            WeeklyScore = user.UserStats?.WeeklyScore ?? 0
+        });
     }
 
-    [HttpGet("{id}/stats")]
-    public async Task<ActionResult<UserStats>> GetUserStats(int id)
+    [HttpGet("{userId}/stats")]
+    public async Task<ActionResult<UserStatsDTO>> GetUserStats(int userId)
     {
-        var stats = await this.pointService.GetUserStatsAsync(id);
-        return Ok(stats);
+        var stats = await this.pointService.GetUserStatsAsync(userId);
+
+        return Ok(new UserStatsDTO
+        {
+            UserId = userId,
+            TotalPoints = stats.TotalPoints,
+            WeeklyScore = stats.WeeklyScore
+        });
     }
 
-    [HttpGet("{id}/badges")]
-    public async Task<ActionResult<IEnumerable<Badge>>> GetUserBadges(int id)
+    [HttpGet("badges")]
+    public async Task<ActionResult<IEnumerable<BadgeDTO>>> GetAllBadges()
     {
-        var badges = await this.badgeService.GetUserBadgesAsync(id);
+        var badges = await this.badgeService.GetAllBadgesAsync();
+
+        var result = badges.Select(b => new BadgeDTO
+        {
+            BadgeId = b.BadgeId,
+            Name = b.Name,
+            Description = b.Description,
+            CriteriaValue = b.CriteriaValue
+        });
+
+        return Ok(result);
+    }
+
+    [HttpGet("{userId}/badges")]
+    public async Task<ActionResult<IEnumerable<UserBadgesDTO>>> GetUserBadges(int userId)
+    {
+        var badges = await this.badgeService.GetUserBadgesAsync(userId);
         return Ok(badges);
     }
 }

@@ -13,6 +13,9 @@ public class Badge
     /// <summary>Gets or sets the badge name.</summary>
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets the database-defined earning description.</summary>
+    public string Description { get; set; } = string.Empty;
+
     /// <summary>Gets or sets the criteria value for earning this badge.</summary>
     public int CriteriaValue { get; set; }
 

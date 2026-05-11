@@ -24,7 +24,7 @@ public class EventUserStateService : IEventUserStateService
     /// </returns>
     public async Task<int> GetDiscountForEventAsync(int eventId)
     {
-        User? user = App.Services.CurrentUserService?.CurrentUser;
+        var user = App.Services.CurrentUserService?.CurrentUser;
         if (user is null || App.Services.UserMovieDiscountRepository is null || App.Services.ScreeningRepository is null)
         {
             return 0;
@@ -62,7 +62,7 @@ public class EventUserStateService : IEventUserStateService
     /// </returns>
     public async Task<bool> IsEventJoinedByUserAsync(int eventId)
     {
-        User? user = App.Services.CurrentUserService?.CurrentUser;
+        var user = App.Services.CurrentUserService?.CurrentUser;
         if (user is null || App.Services.UserEventAttendanceRepository is null)
         {
             return false;

@@ -238,14 +238,25 @@ END");
         {
             var badges = new List<Badge>
             {
-                new() { Name = "The Snob", CriteriaValue = 10 },
-                new() { Name = "Why so serious?", CriteriaValue = 50 },
-                new() { Name = "The Joker", CriteriaValue = 70 },
-                new() { Name = "The Godfather I", CriteriaValue = 100 },
-                new() { Name = "The Godfather II", CriteriaValue = 200 },
-                new() { Name = "The Godfather III", CriteriaValue = 300 }
+                new() { Name = "The Snob", Description = "Reach 10 profile progress points.", CriteriaValue = 10 },
+                new() { Name = "Why so serious?", Description = "Reach 50 profile progress points.", CriteriaValue = 50 },
+                new() { Name = "The Joker", Description = "Reach 70 profile progress points.", CriteriaValue = 70 },
+                new() { Name = "The Godfather I", Description = "Reach 100 profile progress points.", CriteriaValue = 100 },
+                new() { Name = "The Godfather II", Description = "Reach 200 profile progress points.", CriteriaValue = 200 },
+                new() { Name = "The Godfather III", Description = "Reach 300 profile progress points.", CriteriaValue = 300 }
             };
             context.Badges.AddRange(badges);
+        }
+        else
+        {
+            var badgesWithoutDescriptions = await context.Badges
+                .Where(b => b.Description == string.Empty)
+                .ToListAsync();
+
+            foreach (var badge in badgesWithoutDescriptions)
+            {
+                badge.Description = $"Reach {badge.CriteriaValue} profile progress points.";
+            }
         }
 
         // 6. Seed Trivia (Team A Sample)

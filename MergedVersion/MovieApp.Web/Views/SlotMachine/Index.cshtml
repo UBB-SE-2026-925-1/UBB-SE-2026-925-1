@@ -49,7 +49,7 @@
     }
 </style>
 
-@* ── Header ──────────────────────────────────────────────────────────────── *@
+@* -- Header ---------------------------------------------------------------- *@
 <div class="d-flex justify-content-between align-items-end mb-4">
     <div>
         <h1 class="mb-1">Slot Machine</h1>
@@ -58,12 +58,12 @@
     <div class="text-end">
         <div class="badge bg-primary fs-6">@Model.AvailableSpins spin(s) available</div>
         <div class="small text-muted mt-1">
-            Daily: @Model.DailySpinsRemaining · Bonus: @Model.BonusSpins · Streak: @Model.LoginStreak
+            Daily: @Model.DailySpinsRemaining | Bonus: @Model.BonusSpins | Streak: @Model.LoginStreak
         </div>
     </div>
 </div>
 
-@* ── Status message ──────────────────────────────────────────────────────── *@
+@* -- Status message -------------------------------------------------------- *@
 @if (!string.IsNullOrEmpty(Model.StatusMessage))
 {
     <div class="alert @(Model.LastResult?.JackpotDiscountApplied == true ? "alert-success" : "alert-info")">
@@ -71,13 +71,13 @@
     </div>
 }
 
-@* ── Reels ───────────────────────────────────────────────────────────────── *@
+@* -- Reels ----------------------------------------------------------------- *@
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="reel">
             <span class="reel-label">Genre</span>
             <span class="reel-value">
-                @(Model.LastResult?.Genre?.Name ?? "—")
+                @(Model.LastResult?.Genre?.Name ?? "-")
             </span>
         </div>
     </div>
@@ -85,7 +85,7 @@
         <div class="reel">
             <span class="reel-label">Actor</span>
             <span class="reel-value">
-                @(Model.LastResult?.Actor?.Name ?? "—")
+                @(Model.LastResult?.Actor?.Name ?? "-")
             </span>
         </div>
     </div>
@@ -93,13 +93,13 @@
         <div class="reel">
             <span class="reel-label">Director</span>
             <span class="reel-value">
-                @(Model.LastResult?.Director?.Name ?? "—")
+                @(Model.LastResult?.Director?.Name ?? "-")
             </span>
         </div>
     </div>
 </div>
 
-@* ── Spin button ─────────────────────────────────────────────────────────── *@
+@* -- Spin button ----------------------------------------------------------- *@
 <form asp-action="Spin" method="post" class="text-center mb-4">
     @Html.AntiForgeryToken()
     <button type="submit" class="btn btn-lg btn-warning px-5" @(Model.CanSpin ? "" : "disabled")>
@@ -107,7 +107,7 @@
     </button>
 </form>
 
-@* ── Result ──────────────────────────────────────────────────────────────── *@
+@* -- Result --------------------------------------------------------------- *@
 @if (Model.LastResult is not null)
 {
     if (Model.LastResult.JackpotDiscountApplied && Model.LastResult.JackpotMovie is not null)
