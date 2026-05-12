@@ -37,6 +37,21 @@ END");
             // Non-fatal: if the provider doesn't support the IF block (e.g. tests with InMemory), ignore.
         }
 
+        // Ensure the Description column exists on Badges (added after initial schema creation).
+        // EnsureCreated() does not add columns to an already-created table.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'Badges') AND name = N'Description')
+BEGIN
+    ALTER TABLE [Badges] ADD [Description] nvarchar(max) NOT NULL DEFAULT N'';
+END");
+        }
+        catch
+        {
+            // Non-fatal: ignore if provider doesn't support raw SQL (e.g. tests with InMemory).
+        }
+
         // Smart seeding will handle duplicates/missing data below
 
         // 1. Seed Genres
@@ -238,14 +253,25 @@ END");
         {
             var badges = new List<Badge>
             {
-                new() { Name = "The Snob", CriteriaValue = 10 },
-                new() { Name = "Why so serious?", CriteriaValue = 50 },
-                new() { Name = "The Joker", CriteriaValue = 70 },
-                new() { Name = "The Godfather I", CriteriaValue = 100 },
-                new() { Name = "The Godfather II", CriteriaValue = 200 },
-                new() { Name = "The Godfather III", CriteriaValue = 300 }
+                new() { Name = "The Snob", Description = "Reach 10 profile progress points.", CriteriaValue = 10 },
+                new() { Name = "Why so serious?", Description = "Reach 50 profile progress points.", CriteriaValue = 50 },
+                new() { Name = "The Joker", Description = "Reach 70 profile progress points.", CriteriaValue = 70 },
+                new() { Name = "The Godfather I", Description = "Reach 100 profile progress points.", CriteriaValue = 100 },
+                new() { Name = "The Godfather II", Description = "Reach 200 profile progress points.", CriteriaValue = 200 },
+                new() { Name = "The Godfather III", Description = "Reach 300 profile progress points.", CriteriaValue = 300 }
             };
             context.Badges.AddRange(badges);
+        }
+        else
+        {
+            var badgesWithoutDescriptions = await context.Badges
+                .Where(b => b.Description == string.Empty)
+                .ToListAsync();
+
+            foreach (var badge in badgesWithoutDescriptions)
+            {
+                badge.Description = $"Reach {badge.CriteriaValue} profile progress points.";
+            }
         }
 
         // 6. Seed Trivia (Team A Sample)

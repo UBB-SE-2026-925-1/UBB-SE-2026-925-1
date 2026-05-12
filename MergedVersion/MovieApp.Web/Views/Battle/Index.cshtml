@@ -1,0 +1,210 @@
+@model BattleViewModel
+
+@{
+    ViewData["Title"] = "Battle Arena";
+    var battle = Model.Battle;
+    var firstMovie = battle?.FirstMovie;
+    var secondMovie = battle?.SecondMovie;
+    var isActive = string.Equals(battle?.Status, "Active", StringComparison.OrdinalIgnoreCase);
+}
+
+<h1 class="h2 mb-4">Battle Arena</h1>
+
+@if (Model.CurrentUserPoints.HasValue)
+{
+    <div class="alert alert-light border d-flex justify-content-between align-items-center">
+        <span>Your available points</span>
+        <strong>@Model.CurrentUserPoints.Value</strong>
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-info">@Model.StatusMessage</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h2 class="h5 mb-1">Demo controls</h2>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            @if (isActive && battle != null)
+            {
+                <form asp-action="ForceSettle" method="post">
+                    <input type="hidden" name="battleId" value="@battle.BattleId" />
+                    <button type="submit" class="btn btn-outline-secondary">End battle now</button>
+                </form>
+            }
+            <form asp-action="ResetDemo" method="post">
+                <button type="submit" class="btn btn-primary">Reset demo</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (battle == null || firstMovie == null || secondMovie == null)
+{
+    <div class="alert alert-secondary">
+        There is no active battle right now.
+    </div>
+    <form asp-action="CreateDemo" method="post">
+        <button type="submit" class="btn btn-primary">Start demo battle</button>
+    </form>
+}
+else
+{
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <div class="text-muted small">Battle #@battle.BattleId</div>
+            <div class="fw-semibold">@battle.StartDate.ToString("MMM d, yyyy") - @battle.EndDate.ToString("MMM d, yyyy")</div>
+        </div>
+        <span class="badge @(isActive ? "text-bg-success" : "text-bg-secondary")">@battle.Status</span>
+    </div>
+
+    @if (!isActive && Model.WinnerMovieId.HasValue)
+    {
+        var winner = Model.WinnerMovieId.Value == firstMovie.Id ? firstMovie : secondMovie;
+        <div class="alert alert-success">
+            Battle completed. Winner: <strong>@winner.Title</strong>.
+        </div>
+    }
+
+    @if (Model.UserBet != null)
+    {
+        <div class="alert alert-primary">
+            Your bet: <strong>@Model.UserBet.Amount points</strong> on
+            <strong>@(Model.UserBet.Movie?.Title ?? "selected movie")</strong>.
+        </div>
+    }
+
+    <div class="row g-4 align-items-stretch mb-4">
+        <div class="col-12 col-lg-6">
+            <div class="card h-100">
+                <img src="@firstMovie.PosterUrl" class="card-img-top object-fit-cover" style="height: 420px;" alt="@firstMovie.Title poster" />
+                <div class="card-body">
+                    <h2 class="h4">@firstMovie.Title</h2>
+                    <p class="text-muted mb-3">@firstMovie.ReleaseYear | Rating @firstMovie.AverageRating.ToString("0.0")</p>
+                    <div class="d-flex justify-content-between border-top pt-3">
+                        <span>@Model.FirstMovieBetCount bets</span>
+                        <strong>@Model.FirstMoviePointTotal points</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="card h-100">
+                <img src="@secondMovie.PosterUrl" class="card-img-top object-fit-cover" style="height: 420px;" alt="@secondMovie.Title poster" />
+                <div class="card-body">
+                    <h2 class="h4">@secondMovie.Title</h2>
+                    <p class="text-muted mb-3">@secondMovie.ReleaseYear | Rating @secondMovie.AverageRating.ToString("0.0")</p>
+                    <div class="d-flex justify-content-between border-top pt-3">
+                        <span>@Model.SecondMovieBetCount bets</span>
+                        <strong>@Model.SecondMoviePointTotal points</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isActive && Model.UserBet == null)
+    {
+        <form asp-action="PlaceBet" method="post" class="card mb-4" id="betForm">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Place a Bet</h2>
+                <input type="hidden" name="BattleId" value="@battle.BattleId" />
+
+                <div class="row g-3">
+                    <div class="col-12 col-md-7">
+                        <label for="MovieId" class="form-label">Movie</label>
+                        <select class="form-select" id="MovieId" name="MovieId" required>
+                            <option value="">Choose a movie</option>
+                            <option value="@firstMovie.Id">@firstMovie.Title</option>
+                            <option value="@secondMovie.Id">@secondMovie.Title</option>
+                        </select>
+                        <div class="invalid-feedback">Choose one of the battle movies.</div>
+                    </div>
+                    <div class="col-12 col-md-5">
+                        <label for="Amount" class="form-label">Amount</label>
+                        <input class="form-control" id="Amount" name="Amount" type="number" min="1" step="1" required />
+                        <div class="invalid-feedback">Enter a whole number greater than zero.</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary mt-3" id="betSubmit">Place Bet</button>
+            </div>
+        </form>
+    }
+
+    <section class="mb-4">
+        <h2 class="h4 mb-3">Leaderboard</h2>
+        @if (Model.LeaderboardRows.Count == 0)
+        {
+            <div class="alert alert-light border">No bets have been placed yet.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th scope="col">Rank</th>
+                            <th scope="col">User</th>
+                            <th scope="col">Movie</th>
+                            <th scope="col" class="text-end">Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.LeaderboardRows.Count; i++)
+                        {
+                            var row = Model.LeaderboardRows[i];
+                            <tr>
+                                <td>@(i + 1)</td>
+                                <td>@row.Username</td>
+                                <td>@row.MovieTitle</td>
+                                <td class="text-end">@row.Amount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+    <script>
+        $(function () {
+            var $form = $("#betForm");
+            var $movie = $("#MovieId");
+            var $amount = $("#Amount");
+            var $submit = $("#betSubmit");
+
+            function validateBetForm(showErrors) {
+                var hasMovie = $movie.val() !== "";
+                var value = Number($amount.val());
+                var hasAmount = Number.isInteger(value) && value > 0;
+
+                $movie.toggleClass("is-invalid", showErrors && !hasMovie);
+                $amount.toggleClass("is-invalid", showErrors && !hasAmount);
+                $submit.prop("disabled", !(hasMovie && hasAmount));
+
+                return hasMovie && hasAmount;
+            }
+
+            $movie.on("change", function () { validateBetForm(false); });
+            $amount.on("input", function () { validateBetForm(false); });
+            $form.on("submit", function (event) {
+                if (!validateBetForm(true)) {
+                    event.preventDefault();
+                }
+            });
+
+            validateBetForm(false);
+        });
+    </script>
+}

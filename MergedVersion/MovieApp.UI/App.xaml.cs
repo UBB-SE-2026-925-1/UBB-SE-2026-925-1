@@ -6,9 +6,9 @@ using MovieApp.UI.ViewModels;
 using MovieApp.Core.Repositories;
 using MovieApp.Core.Interfaces.Service;
 using MovieApp.UI.Services;
-using MovieApp.UI.Services.Api;
 using MovieApp.UI.ViewModels.Events;
 using System.Net.Http;
+using MovieApp.Proxy;
 using Microsoft.EntityFrameworkCore;
 using MovieApp.Infrastructure;
 using MovieApp.Infrastructure.Data;
@@ -148,28 +148,49 @@ public partial class App : Application
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
+        System.Diagnostics.Debug.WriteLine(">>> App Starting...");
+
+        // ── 1. Database seed (non-fatal: app opens even if seeding partially fails) ──
         try
         {
-            System.Diagnostics.Debug.WriteLine(">>> App Starting...");
+            using var scope = ServiceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<MovieAppDbContext>();
+            await db.Database.EnsureCreatedAsync();
+            await DbInitializer.SeedAsync(db);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($">>> DB SEED WARNING: {ex.Message}");
+            if (ex.InnerException != null)
+                System.Diagnostics.Debug.WriteLine($">>> INNER: {ex.InnerException.Message}");
+            // Non-fatal: continue startup so the window still opens.
+        }
 
-            using (var scope = ServiceProvider.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<MovieAppDbContext>();
-                await db.Database.EnsureCreatedAsync();
-                await DbInitializer.SeedAsync(db);
-            }
-
+        // ── 2. Current user + slot machine streak (non-fatal) ──
+        try
+        {
             System.Diagnostics.Debug.WriteLine(">>> Initializing CurrentUser via API...");
             var currentUserService = ServiceProvider.GetRequiredService<ICurrentUserService>();
             await currentUserService.InitializeAsync();
             CurrentUserId = currentUserService.CurrentUser.Id;
+            MovieApp.Proxy.IdentityConfig.CurrentUserId = CurrentUserId;
             System.Diagnostics.Debug.WriteLine($">>> User '{currentUserService.CurrentUser.Username}' (ID: {CurrentUserId}) loaded.");
 
             System.Diagnostics.Debug.WriteLine(">>> Checking slot machine login streaks...");
             var slotMachineService = ServiceProvider.GetRequiredService<ISlotMachineService>();
             await slotMachineService.RecordLoginAndCheckStreakAsync(CurrentUserId);
             StreakSpinGrantedOnLogin = await slotMachineService.GrantStreakSpinAsync(CurrentUserId);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($">>> API INIT WARNING: {ex.Message}");
+            // Non-fatal: app opens without a current user — pages that need the user
+            // will surface individual errors rather than blocking the window.
+        }
 
+        // ── 3. Open the window unconditionally ──
+        try
+        {
             System.Diagnostics.Debug.WriteLine(">>> Launching MainWindow...");
             _window = ServiceProvider.GetRequiredService<MainWindow>();
             _window.Activate();
@@ -177,10 +198,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($">>> CRITICAL STARTUP ERROR: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine(ex.StackTrace);
-            if (ex.InnerException != null)
-                System.Diagnostics.Debug.WriteLine($">>> INNER ERROR: {ex.InnerException.Message}");
+            System.Diagnostics.Debug.WriteLine($">>> CRITICAL: Could not create MainWindow: {ex.Message}");
             if (System.Diagnostics.Debugger.IsAttached) System.Diagnostics.Debugger.Break();
         }
     }

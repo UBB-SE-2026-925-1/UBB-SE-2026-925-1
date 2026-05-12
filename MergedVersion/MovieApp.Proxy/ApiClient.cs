@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net;
 using System.Text.Json;
 
 namespace MovieApp.Proxy;
@@ -32,7 +33,7 @@ public class ApiClient
     public async Task<T?> GetAsync<T>(string endpoint, CancellationToken ct = default)
     {
         int retryCount = 0;
-        const int maxRetries = 10;
+        const int maxRetries = 2;
         while (true)
         {
             try
@@ -40,6 +41,13 @@ public class ApiClient
                 using var response = await this.httpClient.GetAsync(endpoint, ct);
                 if (!response.IsSuccessStatusCode)
                 {
+                    if (IsTransientStatusCode(response.StatusCode) && retryCount < maxRetries)
+                    {
+                        retryCount++;
+                        await Task.Delay(250 * retryCount, ct);
+                        continue;
+                    }
+
                     var errorContent = await response.Content.ReadAsStringAsync(ct);
                     throw new Exception($"API Error ({response.StatusCode}) on {endpoint}: {errorContent}");
                 }
@@ -60,13 +68,22 @@ public class ApiClient
             {
                 return default;
             }
-            catch (Exception) when (retryCount < maxRetries)
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (HttpRequestException) when (retryCount < maxRetries)
             {
                 retryCount++;
-                await Task.Delay(2000, ct);
+                await Task.Delay(250 * retryCount, ct);
             }
         }
     }
+
+    private static bool IsTransientStatusCode(HttpStatusCode statusCode)
+        => statusCode == HttpStatusCode.RequestTimeout
+            || statusCode == HttpStatusCode.TooManyRequests
+            || (int)statusCode >= 500;
 
     public async Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest request, CancellationToken ct = default)
     {

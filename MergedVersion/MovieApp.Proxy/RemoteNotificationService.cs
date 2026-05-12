@@ -42,7 +42,6 @@ public class RemoteNotificationService : INotificationService
             cancellationToken);
     }
 
-    // unused methods for now
     public Task GeneratePriceDropNotificationAsync(int eventIdentifier, string eventTitle, CancellationToken cancellationToken = default)
         => Task.CompletedTask;
 

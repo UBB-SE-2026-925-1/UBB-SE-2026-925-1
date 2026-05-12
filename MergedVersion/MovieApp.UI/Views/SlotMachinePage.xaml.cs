@@ -42,7 +42,7 @@ public sealed partial class SlotMachinePage : Page
     {
         this.Loaded -= this.OnPageLoaded;
 
-        User? currentUser = App.Services.CurrentUserService?.CurrentUser;
+        var currentUser = App.Services.CurrentUserService?.CurrentUser;
         if (currentUser is null)
         {
             return;

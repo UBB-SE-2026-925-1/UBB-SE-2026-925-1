@@ -16,12 +16,20 @@ public sealed class BattleRepository : IBattleRepository
         => await this.context.Battles
             .Include(b => b.FirstMovie)
             .Include(b => b.SecondMovie)
+            .Include(b => b.Bets)
+                .ThenInclude(bet => bet.User)
+            .Include(b => b.Bets)
+                .ThenInclude(bet => bet.Movie)
             .ToListAsync(ct);
 
     public async Task<Battle?> GetByIdAsync(int id, CancellationToken ct = default)
         => await this.context.Battles
             .Include(b => b.FirstMovie)
             .Include(b => b.SecondMovie)
+            .Include(b => b.Bets)
+                .ThenInclude(bet => bet.User)
+            .Include(b => b.Bets)
+                .ThenInclude(bet => bet.Movie)
             .FirstOrDefaultAsync(b => b.BattleId == id, ct);
 
     public async Task<int> InsertAsync(Battle battle, CancellationToken ct = default)

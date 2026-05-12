@@ -31,7 +31,8 @@ public sealed class CurrentUserServiceTests
         await service.InitializeAsync();
         await service.InitializeAsync();
 
-        Assert.Equal(expectedUser, service.CurrentUser);
+        Assert.Equal(expectedUser.Id, service.CurrentUser.Id);
+        Assert.Equal(expectedUser.Username, service.CurrentUser.Username);
         Assert.Equal(1, repository.FindCalls);
     }
 

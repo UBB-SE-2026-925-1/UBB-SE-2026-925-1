@@ -13,7 +13,10 @@ builder.Services.AddMemoryCache();
 var apiBaseUrl = builder.Configuration["WebApi:BaseUrl"] ?? "http://localhost:5207";
 
 builder.Services.AddHttpClient("MovieApi", client =>
-    client.BaseAddress = new Uri(apiBaseUrl));
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(10); // fail fast so pages show error banner instead of hanging
+});
 
 // ApiClient is scoped so each request gets its own instance (important for
 // per-request Bearer token injection once Person 2's JWT flow is wired in).
@@ -32,6 +35,8 @@ builder.Services.AddScoped<ITriviaRepository, RemoteTriviaRepository>();
 builder.Services.AddScoped<ITriviaRewardRepository, RemoteTriviaRewardRepository>();
 builder.Services.AddScoped<INotificationService, RemoteNotificationService>();
 builder.Services.AddScoped<IRewardService, RemoteRewardService>();
+builder.Services.AddScoped<IBattleService, RemoteBattleService>();
+builder.Services.AddScoped<IPointService, RemotePointService>();
 
 // ExternalReviewService is registered with no providers for now.
 // ASP.NET Core DI resolves IEnumerable<IExternalReviewProvider> as empty when

@@ -14,13 +14,17 @@ public sealed class BetRepository : IBetRepository
 
     public async Task<List<Bet>> GetAllAsync(CancellationToken ct = default)
         => await this.context.Bets
+            .Include(b => b.User)
+            .Include(b => b.Battle)
             .Include(b => b.Movie)
             .ToListAsync(ct);
 
     public async Task<Bet?> GetByIdAsync(int userId, int battleId, CancellationToken ct = default)
         => await this.context.Bets
+            .Include(b => b.User)
+            .Include(b => b.Battle)
             .Include(b => b.Movie)
-            .FirstOrDefaultAsync(b => b.User.Id == userId && b.Battle.BattleId == battleId, ct);
+            .FirstOrDefaultAsync(b => b.User != null && b.User.Id == userId && b.Battle != null && b.Battle.BattleId == battleId, ct);
 
     public async Task<bool> InsertAsync(Bet bet, CancellationToken ct = default)
     {
@@ -44,7 +48,7 @@ public sealed class BetRepository : IBetRepository
 
     public async Task<bool> DeleteByBattleIdAsync(int battleId, CancellationToken ct = default)
     {
-        var battleBets = this.context.Bets.Where(b => b.Battle.BattleId == battleId);
+        var battleBets = this.context.Bets.Where(b => b.Battle != null && b.Battle.BattleId == battleId);
         this.context.Bets.RemoveRange(battleBets);
         return await this.context.SaveChangesAsync(ct) > 0;
     }
