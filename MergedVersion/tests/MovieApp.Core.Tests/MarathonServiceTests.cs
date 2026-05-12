@@ -1,5 +1,5 @@
 using Moq;
-using MovieApp.Core.Models;
+using MovieApp.Core.DTOs;
 using MovieApp.Core.Models;
 using MovieApp.Core.Repositories;
 using MovieApp.Core.Services;
@@ -183,11 +183,9 @@ public sealed class MarathonServiceTests
 
     private sealed class StubCurrentUserService : ICurrentUserService
     {
-        public User CurrentUser { get; } = new()
+        public CurrentUserDTO CurrentUser { get; } = new()
         {
             Id = 10,
-            AuthProvider = "seed",
-            AuthSubject = "dummy",
             Username = "alice",
         };
 
@@ -222,7 +220,7 @@ public sealed class MarathonServiceTests
         var mockRepo = new Moq.Mock<IMarathonRepository>();
         var mockUserSvc = new Moq.Mock<ICurrentUserService>();
 
-        mockUserSvc.Setup(u => u.CurrentUser).Returns(new User { Id = 1, AuthProvider = "", AuthSubject = "", Username = "TestUser" });
+        mockUserSvc.Setup(u => u.CurrentUser).Returns(new CurrentUserDTO { Id = 1, Username = "TestUser" });
 
         var progress = new MarathonProgress { UserId = 1, MarathonId = 5 };
 
@@ -242,7 +240,7 @@ public sealed class MarathonServiceTests
         var mockRepo = new Moq.Mock<IMarathonRepository>();
         var mockUserSvc = new Moq.Mock<ICurrentUserService>();
 
-        mockUserSvc.Setup(u => u.CurrentUser).Returns(new User { Id = 1, AuthProvider = "", AuthSubject = "", Username = "TestUser" });
+        mockUserSvc.Setup(u => u.CurrentUser).Returns(new CurrentUserDTO { Id = 1, Username = "TestUser" });
 
         mockRepo.Setup(r => r.GetUserProgressAsync(1, 10)).ReturnsAsync((MarathonProgress?)null);
         mockRepo.Setup(r => r.GetActiveMarathonsAsync()).ReturnsAsync(new List<Marathon> { new Marathon { Id = 10, Title = "Normal" } });
@@ -262,7 +260,7 @@ public sealed class MarathonServiceTests
         var mockRepo = new Moq.Mock<IMarathonRepository>();
         var mockUserSvc = new Moq.Mock<ICurrentUserService>();
 
-        mockUserSvc.Setup(u => u.CurrentUser).Returns(new User { Id = 1, AuthProvider = "", AuthSubject = "", Username = "TestUser" });
+        mockUserSvc.Setup(u => u.CurrentUser).Returns(new CurrentUserDTO { Id = 1, Username = "TestUser" });
 
         mockRepo.Setup(r => r.GetUserProgressAsync(1, 10)).ReturnsAsync((MarathonProgress?)null);
         mockRepo.Setup(r => r.GetActiveMarathonsAsync()).ReturnsAsync(new List<Marathon> { new Marathon { Id = 10, Title = "Elite", PrerequisiteMarathonId = 5 } });

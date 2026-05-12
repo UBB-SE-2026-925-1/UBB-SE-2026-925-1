@@ -57,6 +57,21 @@ END");
             // Non-fatal: ignore on providers that do not support this DDL (e.g. InMemory).
         }
 
+        // Ensure the Description column exists on Badges (added after initial schema creation).
+        // EnsureCreated() does not add columns to an already-created table.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'Badges') AND name = N'Description')
+BEGIN
+    ALTER TABLE [Badges] ADD [Description] nvarchar(max) NOT NULL DEFAULT N'';
+END");
+        }
+        catch
+        {
+            // Non-fatal: ignore on providers that do not support this DDL (e.g. InMemory).
+        }
+
         // Ensure the legacy Rating column in Movies has a DEFAULT constraint so that
         // EF Core inserts (which omit the column) do not violate the NOT NULL constraint.
         try
