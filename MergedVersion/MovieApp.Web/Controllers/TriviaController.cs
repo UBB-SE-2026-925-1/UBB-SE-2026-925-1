@@ -72,22 +72,13 @@ public class TriviaController : Controller
         bool rewardGranted = false;
         if (isCorrect)
         {
-            // Forward-compat shim: the WebAPI doesn't expose a POST endpoint for
-            // trivia rewards yet, so AddAsync throws NotSupportedException.
-            try
+            await this.triviaRewardRepository.AddAsync(new TriviaReward
             {
-                await this.triviaRewardRepository.AddAsync(new TriviaReward
-                {
-                    UserId = userId,
-                    IsRedeemed = false,
-                    CreatedAt = DateTime.UtcNow,
-                });
-                rewardGranted = true;
-            }
-            catch (NotSupportedException)
-            {
-                rewardGranted = false;
-            }
+                UserId = userId,
+                IsRedeemed = false,
+                CreatedAt = DateTime.UtcNow,
+            });
+            rewardGranted = true;
         }
 
         var viewModel = new TriviaIndexViewModel
@@ -101,9 +92,7 @@ public class TriviaController : Controller
             CorrectOption = char.ToUpperInvariant(question.CorrectOption),
             RewardGranted = rewardGranted,
             FeedbackMessage = isCorrect
-                ? (rewardGranted
-                    ? "Correct! You earned a trivia reward."
-                    : "Correct! (Reward persistence pending API support.)")
+                ? "Correct!"
                 : $"Not quite. The right answer was option {char.ToUpperInvariant(question.CorrectOption)}.",
         };
 

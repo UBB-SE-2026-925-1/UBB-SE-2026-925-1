@@ -19,8 +19,9 @@ public sealed class SlotMachineService : ISlotMachineService
 {
     private const int ResetSpinsCount = 5;
     private const int NoSpinsAvailable = 0;
-    private const int DiscountPercentage = 70;
-    private const double DiscountPercentageDouble = 70.0;
+    private const int MinDiscountPercentage = 10;
+    private const int MaxDiscountPercentage = 70;
+    private const int DiscountStep = 5;
     private const int RequiredLoginStreak = 3;
     private const int MaximumEventSpinsPerDay = 2;
 
@@ -79,28 +80,13 @@ public sealed class SlotMachineService : ISlotMachineService
             state.BonusSpins--;
         }
 
-        IReadOnlyList<ReelCombination> validCombinations = await this.movieRepository.GetValidReelCombinationsAsync();
-        
-        List<Genre> distinctGenres;
-        List<Actor> distinctActors;
-        List<Director> distinctDirectors;
+        List<Genre> distinctGenres = (await this.movieRepository.GetGenresAsync()).ToList();
+        List<Actor> distinctActors = (await this.movieRepository.GetActorsAsync()).ToList();
+        List<Director> distinctDirectors = (await this.movieRepository.GetDirectorsAsync()).ToList();
 
-        if (validCombinations.Count == NoSpinsAvailable)
+        if (distinctGenres.Count == 0 || distinctActors.Count == 0 || distinctDirectors.Count == 0)
         {
-            distinctGenres = (await this.movieRepository.GetGenresAsync()).ToList();
-            distinctActors = (await this.movieRepository.GetActorsAsync()).ToList();
-            distinctDirectors = (await this.movieRepository.GetDirectorsAsync()).ToList();
-            
-            if (distinctGenres.Count == 0 || distinctActors.Count == 0 || distinctDirectors.Count == 0)
-            {
-                throw new InvalidOperationException("No movies with active screenings available");
-            }
-        }
-        else
-        {
-            distinctGenres = validCombinations.Select(combination => combination.Genre).DistinctBy(genre => genre.Id).ToList();
-            distinctActors = validCombinations.Select(combination => combination.Actor).DistinctBy(actor => actor.Id).ToList();
-            distinctDirectors = validCombinations.Select(combination => combination.Director).DistinctBy(director => director.Id).ToList();
+            throw new InvalidOperationException("No genres, actors or directors available");
         }
 
         Genre selectedGenre = distinctGenres[this.random.Next(distinctGenres.Count)];
@@ -134,13 +120,20 @@ public sealed class SlotMachineService : ISlotMachineService
 
         if (jackpotMovie is not null)
         {
-            await this.GrantJackpotDiscount(userIdentifier, jackpotMovie.Id);
+            int randomDiscount = this.RollRandomDiscount();
+            await this.GrantJackpotDiscountInternal(userIdentifier, jackpotMovie.Id, randomDiscount);
             result.JackpotDiscountApplied = true;
-            result.DiscountPercentage = DiscountPercentage;
+            result.DiscountPercentage = randomDiscount;
         }
 
         await this.stateRepository.UpdateAsync(state);
         return result;
+    }
+
+    private int RollRandomDiscount()
+    {
+        int steps = (MaxDiscountPercentage - MinDiscountPercentage) / DiscountStep;
+        return MinDiscountPercentage + (DiscountStep * this.random.Next(0, steps + 1));
     }
 
     /// <inheritdoc/>
@@ -288,7 +281,10 @@ public sealed class SlotMachineService : ISlotMachineService
     }
 
     /// <inheritdoc/>
-    public async Task GrantJackpotDiscount(int userIdentifier, int movieIdentifier)
+    public Task GrantJackpotDiscount(int userIdentifier, int movieIdentifier)
+        => this.GrantJackpotDiscountInternal(userIdentifier, movieIdentifier, this.RollRandomDiscount());
+
+    private async Task GrantJackpotDiscountInternal(int userIdentifier, int movieIdentifier, int discountPercentage)
     {
         var movie = await this.movieRepository.GetByIdAsync(movieIdentifier);
         string movieTitle = movie?.Title ?? "a movie";
@@ -299,21 +295,20 @@ public sealed class SlotMachineService : ISlotMachineService
             RewardType = "MovieDiscount",
             RedemptionStatus = false,
             ApplicabilityScope = movieTitle,
-            DiscountValue = DiscountPercentageDouble,
+            DiscountValue = discountPercentage,
             OwnerUserId = userIdentifier,
             EventId = movieIdentifier,
         };
 
         await this.discountRepository.AddAsync(jackpotReward);
 
-        // Add Notification
         Notification notification = new Notification
         {
             Id = 0,
             UserId = userIdentifier,
             EventId = 0,
             Type = "Jackpot Win",
-            Message = $"Congratulations! You won a {DiscountPercentage}% discount for the movie '{movieTitle}' through the Slot Machine!",
+            Message = $"Congratulations! You won a {discountPercentage}% discount for the movie '{movieTitle}' through the Slot Machine!",
             CreatedAt = DateTime.UtcNow,
             State = NotificationState.Unread
         };

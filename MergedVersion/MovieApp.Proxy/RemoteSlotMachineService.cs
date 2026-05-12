@@ -60,7 +60,6 @@ public class RemoteSlotMachineService : ISlotMachineService
                ?.ToList().AsReadOnly()
            ?? new List<Director>().AsReadOnly();
 
-    // The three methods below run server-side inside SpinAsync; the client never calls them directly.
     public Task<IReadOnlyList<Event>> GetMatchingEventsAsync(int genreIdentifier, int actorIdentifier, int directorIdentifier)
         => throw new NotSupportedException();
 

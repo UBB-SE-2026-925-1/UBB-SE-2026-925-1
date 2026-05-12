@@ -39,6 +39,20 @@ public class TriviaController : ControllerBase
         if (reward == null) return NotFound();
         return Ok(reward);
     }
+
+    [HttpPost("reward")]
+    public async Task<ActionResult<TriviaReward>> AddReward([FromBody] TriviaReward reward)
+    {
+        await this.rewardRepository.AddAsync(reward);
+        return Ok(reward);
+    }
+
+    [HttpPost("reward/{rewardId}/redeem")]
+    public async Task<IActionResult> RedeemReward(int rewardId)
+    {
+        await this.rewardRepository.MarkAsRedeemedAsync(rewardId);
+        return Ok();
+    }
 }
 
 [ApiController]
