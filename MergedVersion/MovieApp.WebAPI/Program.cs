@@ -76,7 +76,7 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
 
-builder.WebHost.UseUrls("http://localhost:5207");
+
 
 var app = builder.Build();
 
