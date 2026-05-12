@@ -134,6 +134,17 @@ public class FakeNotificationRepository : INotificationRepository
         Assert.Empty(await service.GetNotificationsByUserIdAsync(100));
     }
 
+    public Task MarkAsReadAsync(int notificationId, CancellationToken cancellationToken = default)
+    {
+        var item = Items.FirstOrDefault(n => n.Id == notificationId);
+
+        if (item != null)
+        {
+            item.State = NotificationState.Read;
+        }
+
+        return Task.CompletedTask;
+    }
 
 
 }

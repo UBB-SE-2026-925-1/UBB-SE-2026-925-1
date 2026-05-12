@@ -1,0 +1,85 @@
+﻿@model MovieApp.Web.Models.ReferralIndexViewModel
+
+@{
+    ViewData["Title"] = "Referral";
+}
+
+<h1>Referral Program</h1>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<section>
+    <h2>Your referral code</h2>
+
+    @if (string.IsNullOrWhiteSpace(Model.ReferralCode))
+    {
+        <p>You do not have a referral code yet.</p>
+
+        <form asp-action="GenerateCode" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit">Generate referral code</button>
+        </form>
+    }
+    else
+    {
+        <p><strong>@Model.ReferralCode</strong></p>
+    }
+</section>
+
+<section>
+    <h2>Reward balance</h2>
+    <p>You have <strong>@Model.RewardBalance</strong> referral rewards.</p>
+</section>
+
+<section>
+    <h2>Apply referral code</h2>
+
+    <form asp-action="ApplyCode" method="post">
+        @Html.AntiForgeryToken()
+
+        <input type="text"
+               name="codeToApply"
+               placeholder="Enter referral code" />
+
+        <button type="submit">Apply code</button>
+    </form>
+</section>
+
+<section>
+    <h2>Referral history</h2>
+
+    @if (!Model.History.Any())
+    {
+        <p>No referral history yet.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Friend</th>
+                    <th>Event</th>
+                    <th>Used at</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.History)
+                {
+                    <tr>
+                        <td>@item.FriendName</td>
+                        <td>@item.EventTitle</td>
+                        <td>@item.FormattedDate</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

@@ -38,6 +38,9 @@ builder.Services.AddScoped<IRewardService, RemoteRewardService>();
 builder.Services.AddScoped<IBattleService, RemoteBattleService>();
 builder.Services.AddScoped<IPointService, RemotePointService>();
 
+builder.Services.AddScoped<IAmbassadorRepository, RemoteAmbassadorRepository>();
+builder.Services.AddScoped<IReferralCodeGenerator, ReferralCodeGenerator>();
+builder.Services.AddScoped<IReferralLogService, ReferralLogService>();
 // ExternalReviewService is registered with no providers for now.
 // ASP.NET Core DI resolves IEnumerable<IExternalReviewProvider> as empty when
 // no providers are registered — GetExternalReviewsAsync returns [] gracefully.
