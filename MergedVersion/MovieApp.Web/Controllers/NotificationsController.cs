@@ -9,7 +9,7 @@ public class NotificationsController : Controller
     private readonly INotificationService notificationService;
 
     // temporary hardcoded user until JWT auth is finished
-    private const int CurrentUserId = 1;
+    private const int CurrentUserId = 4;
 
     public NotificationsController(INotificationService notificationService)
     {

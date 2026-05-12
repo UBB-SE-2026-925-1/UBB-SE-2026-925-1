@@ -8,7 +8,7 @@ public class RewardsController : Controller
     private readonly IRewardService rewardService;
 
     // temporary hardcoded user until JWT auth is finished
-    private const int CurrentUserId = 1;
+    private const int CurrentUserId = 4;
 
     public RewardsController(IRewardService rewardService)
     {
