@@ -76,6 +76,8 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
 
+
+
 var app = builder.Build();
 
 // Seed Database
