@@ -36,6 +36,9 @@ builder.Services.AddScoped<ITriviaRewardRepository, RemoteTriviaRewardRepository
 builder.Services.AddScoped<IBattleService, RemoteBattleService>();
 builder.Services.AddScoped<IPointService, RemotePointService>();
 builder.Services.AddScoped<IBadgeService, RemoteBadgeService>();
+builder.Services.AddScoped<IMarathonService, RemoteMarathonService>();
+builder.Services.AddScoped<IFavoriteEventService, RemoteFavoriteEventService>();
+
 
 // ExternalReviewService is registered with no providers for now.
 // ASP.NET Core DI resolves IEnumerable<IExternalReviewProvider> as empty when

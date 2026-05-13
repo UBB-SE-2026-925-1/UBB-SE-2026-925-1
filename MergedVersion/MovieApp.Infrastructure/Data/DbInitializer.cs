@@ -178,6 +178,60 @@ END");
         }
         await context.SaveChangesAsync();
 
+        // 4.25 Seed Marathons for the current ISO week
+        var now = DateTime.UtcNow;
+        var weekScoping = $"{now.Year}-W{System.Globalization.ISOWeek.GetWeekOfYear(now):D2}";
+
+        if (!await context.Marathons.AnyAsync(m => m.WeekScoping == weekScoping))
+        {
+            var allMovies = await context.Movies.ToListAsync();
+
+            var marathonsToSeed = new List<Marathon>
+            {
+                new()
+                {
+                    Title = "Mind-Bending Marathon",
+                    Description = "Reality-warping films that twist your perception.",
+                    Theme = "Sci-Fi",
+                    PosterUrl = "https://images.remote.com/marathon-mindbending.jpg",
+                    WeekScoping = weekScoping,
+                    IsActive = true,
+                    Movies = allMovies.Where(m =>
+                        m.Title == "Inception" ||
+                        m.Title == "Interstellar").ToList(),
+                },
+                new()
+                {
+                    Title = "Crime Classics Marathon",
+                    Description = "Iconic crime cinema across the decades.",
+                    Theme = "Crime",
+                    PosterUrl = "https://images.remote.com/marathon-crime.jpg",
+                    WeekScoping = weekScoping,
+                    IsActive = true,
+                    Movies = allMovies.Where(m =>
+                        m.Title == "Pulp Fiction" ||
+                        m.Title == "The Shawshank Redemption" ||
+                        m.Title == "The Dark Knight").ToList(),
+                },
+                new()
+                {
+                    Title = "Action-Packed Marathon",
+                    Description = "Non-stop adrenaline from start to finish.",
+                    Theme = "Action",
+                    PosterUrl = "https://images.remote.com/marathon-action.jpg",
+                    WeekScoping = weekScoping,
+                    IsActive = true,
+                    Movies = allMovies.Where(m =>
+                        m.Title == "The Avengers" ||
+                        m.Title == "Mission Impossible" ||
+                        m.Title == "The Dark Knight").ToList(),
+                },
+            };
+
+            context.Marathons.AddRange(marathonsToSeed);
+            await context.SaveChangesAsync();
+        }
+
         // 4.5 Seed Events
         if (!await context.Events.AnyAsync())
         {
