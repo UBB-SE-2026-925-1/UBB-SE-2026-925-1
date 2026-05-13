@@ -35,6 +35,8 @@ builder.Services.AddScoped<ITriviaRepository, RemoteTriviaRepository>();
 builder.Services.AddScoped<ITriviaRewardRepository, RemoteTriviaRewardRepository>();
 builder.Services.AddScoped<IBattleService, RemoteBattleService>();
 builder.Services.AddScoped<IPointService, RemotePointService>();
+builder.Services.AddScoped<IMarathonService, RemoteMarathonService>();
+builder.Services.AddScoped<IFavoriteEventService, RemoteFavoriteEventService>();
 
 
 // ExternalReviewService is registered with no providers for now.
