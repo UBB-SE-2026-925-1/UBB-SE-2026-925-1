@@ -60,6 +60,19 @@ public sealed partial class NotificationsViewModel : ObservableObject
     /// </summary>
     public string StatusMessage => "Notifications are unavailable because the database connection is not ready.";
 
+    // BUG FIX: binding SelectedNotification.EventId (an int) directly to TextBox.Text
+    // in XAML causes "0" to appear when no notification is selected because the int
+    // defaults to 0 rather than an empty string. Exposing a formatted string property
+    // here keeps the TextBox blank when nothing is selected.
+    /// <summary>
+    /// Gets the event identifier of the selected notification as a display string,
+    /// or an empty string when no notification is selected.
+    /// </summary>
+    public string SelectedEventIdText =>
+        this.SelectedNotification is not null
+            ? this.SelectedNotification.EventId.ToString()
+            : string.Empty;
+
     /// <summary>
     /// Gets the command that opens the event related to the selected notification.
     /// </summary>
@@ -92,13 +105,14 @@ public sealed partial class NotificationsViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Updates command availability when the selected notification changes.
+    /// Updates command availability and the event ID display when the selected notification changes.
     /// </summary>
     /// <param name="value">The newly selected notification.</param>
     partial void OnSelectedNotificationChanged(Notification? value)
     {
-        ((RelayCommand)OpenEventCommand).NotifyCanExecuteChanged();
-        ((AsyncRelayCommand)MarkAsReadCommand).NotifyCanExecuteChanged();
+        ((RelayCommand)this.OpenEventCommand).NotifyCanExecuteChanged();
+        ((AsyncRelayCommand)this.MarkAsReadCommand).NotifyCanExecuteChanged();
+        this.OnPropertyChanged(nameof(this.SelectedEventIdText));
     }
 
     /// <summary>
