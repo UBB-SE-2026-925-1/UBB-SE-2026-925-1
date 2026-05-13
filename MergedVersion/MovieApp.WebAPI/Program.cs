@@ -1,20 +1,20 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
-using MovieApp.Infrastructure;
-using MovieApp.Core.Repositories;
+using Microsoft.IdentityModel.Tokens;
 using MovieApp.Core.Interfaces.Repository;
 using MovieApp.Core.Interfaces.Service;
-using MovieApp.Infrastructure.Repositories;
-using MovieApp.Infrastructure.Data;
+using MovieApp.Core.Repositories;
 using MovieApp.Core.Services;
+using MovieApp.Infrastructure;
+using MovieApp.Infrastructure.Data;
+using MovieApp.Infrastructure.Repositories;
+using MovieApp.WebAPI.Services;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// 0. Add Options
-builder.Services.AddSingleton(new BootstrapUserOptions
-{
-    AuthProvider = "Seed",
-    AuthSubject = "Admin"
-});
 
 // 1. Add DB Context
 builder.Services.AddDbContext<MovieAppDbContext>(options =>
@@ -56,25 +56,87 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ISlotMachineService, SlotMachineService>();
 builder.Services.AddScoped<ISlotMachineResultService, SlotMachineResultService>();
 builder.Services.AddScoped<IFavoriteEventService, FavoriteEventService>();
-builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IReferralCodeGenerator, ReferralCodeGenerator>();
 builder.Services.AddScoped<IReferralLogService, ReferralLogService>();
 builder.Services.AddScoped<IReferralValidator, ReferralValidator>();
 builder.Services.AddScoped<IRewardService, RewardService>();
 
-builder.Services.AddControllers()
+// 4. CurrentUserService — WebAPI implementation reads from JWT ClaimsPrincipal
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, HttpContextCurrentUserService>();
+
+// 5. JWT Authentication
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var keyBytes = Encoding.UTF8.GetBytes(jwtSection["Key"]!);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSection["Issuer"],
+        ValidAudience = jwtSection["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
+    };
+});
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AuthorizeFilter());
+    })
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.ReferenceHandler =
+            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
+
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// Swagger with JWT support
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Enter your JWT token."
+    });
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
         policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
+
+//builder.WebHost.UseUrls("http://localhost:5207");
 
 var app = builder.Build();
 
@@ -94,7 +156,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -103,7 +164,21 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
-app.UseAuthorization();
-app.MapControllers();
 
+// ORDER MATTERS: Authentication before Authorization
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true)
+    {
+        var currentUserService = context.RequestServices
+            .GetRequiredService<ICurrentUserService>();
+        await currentUserService.InitializeAsync();
+    }
+    await next();
+});
+
+app.MapControllers();
 app.Run();

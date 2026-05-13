@@ -11,12 +11,8 @@
     <File Path="README.md" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="MovieApp.Core/MovieApp.Core.csproj">
-      <Build Solution="Debug|Any CPU" Project="false" />
-    </Project>
-    <Project Path="MovieApp.Infrastructure/MovieApp.Infrastructure.csproj">
-      <Build Solution="Debug|Any CPU" Project="false" />
-    </Project>
+    <Project Path="MovieApp.Core/MovieApp.Core.csproj" />
+    <Project Path="MovieApp.Infrastructure/MovieApp.Infrastructure.csproj" />
     <Project Path="MovieApp.Proxy/MovieApp.Proxy.csproj" />
     <Project Path="MovieApp.Web/MovieApp.Web.csproj" />
     <Project Path="MovieApp.UI/MovieApp.UI.csproj">
@@ -26,7 +22,6 @@
       <Platform Solution="Debug|Any CPU" Project="x64" />
       <Deploy Solution="*|ARM64" />
       <Deploy Solution="*|x86" />
-      <Deploy Solution="Debug|Any CPU" />
       <Deploy Solution="Release|x64" />
     </Project>
   </Folder>
@@ -35,6 +30,5 @@
   </Folder>
   <Project Path="MovieApp.WebAPI/MovieApp.WebAPI.csproj">
     <BuildDependency Project="MovieApp.UI/MovieApp.UI.csproj" />
-    <Platform Solution="Debug|Any CPU" Project="x64" />
   </Project>
 </Solution>

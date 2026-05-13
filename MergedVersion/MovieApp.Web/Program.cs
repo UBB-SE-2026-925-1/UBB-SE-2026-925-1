@@ -3,27 +3,32 @@ using MovieApp.Core.Interfaces.Service;
 using MovieApp.Core.Repositories;
 using MovieApp.Core.Services;
 using MovieApp.Proxy;
+using MovieApp.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 
-// ── HTTP client ──────────────────────────────────────────────────────────────
+// ── HTTP client ───────────────────────────────────────────────────────────────
 var apiBaseUrl = builder.Configuration["WebApi:BaseUrl"] ?? "http://localhost:5207";
-
 builder.Services.AddHttpClient("MovieApi", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
     client.Timeout = TimeSpan.FromSeconds(10); // fail fast so pages show error banner instead of hanging
 });
 
+// Token store — singleton so it survives across scopes
+builder.Services.AddSingleton<JwtTokenStore>();
+// Auto-login runs once at startup, acquires JWT and injects it into ApiClient
+builder.Services.AddHostedService<AutoLoginService>();
+
 // ApiClient is scoped so each request gets its own instance (important for
 // per-request Bearer token injection once Person 2's JWT flow is wired in).
 builder.Services.AddScoped<ApiClient>(sp =>
     new ApiClient(sp.GetRequiredService<IHttpClientFactory>().CreateClient("MovieApi")));
 
-// ── Remote services (all call the WebAPI via ApiClient) ──────────────────────
+// ── Remote services (all call the WebAPI via ApiClient) ───────────────────────
 builder.Services.AddScoped<ICatalogService, RemoteCatalogService>();
 builder.Services.AddScoped<IReviewService, RemoteReviewService>();
 builder.Services.AddScoped<ICommentService, RemoteCommentService>();
@@ -35,7 +40,6 @@ builder.Services.AddScoped<ITriviaRepository, RemoteTriviaRepository>();
 builder.Services.AddScoped<ITriviaRewardRepository, RemoteTriviaRewardRepository>();
 builder.Services.AddScoped<IBattleService, RemoteBattleService>();
 builder.Services.AddScoped<IPointService, RemotePointService>();
-
 
 // ExternalReviewService is registered with no providers for now.
 // ASP.NET Core DI resolves IEnumerable<IExternalReviewProvider> as empty when
@@ -51,9 +55,13 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
+
+// Inject JWT into every ApiClient instance, per-request
+app.UseMiddleware<ApiClientTokenInitializer>();
 
 app.MapControllerRoute(
     name: "default",
