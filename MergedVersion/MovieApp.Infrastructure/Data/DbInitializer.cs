@@ -37,6 +37,26 @@ END");
             // Non-fatal: if the provider doesn't support the IF block (e.g. tests with InMemory), ignore.
         }
 
+        // Ensure WatchedEvents table exists (added after initial migration; raw SQL covers
+        // databases that were created via EnsureCreated rather than Migrate).
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'WatchedEvents')
+BEGIN
+    CREATE TABLE [WatchedEvents] (
+        [EventId]     INT            NOT NULL,
+        [EventTitle]  NVARCHAR(MAX)  NOT NULL,
+        [TargetPrice] DECIMAL(18,2)  NOT NULL,
+        CONSTRAINT [PK_WatchedEvents] PRIMARY KEY ([EventId])
+    )
+END");
+        }
+        catch
+        {
+            // Non-fatal: ignore on providers that do not support this DDL (e.g. InMemory).
+        }
+
         // Ensure the Description column exists on Badges (added after initial schema creation).
         // EnsureCreated() does not add columns to an already-created table.
         try
@@ -49,7 +69,25 @@ END");
         }
         catch
         {
-            // Non-fatal: ignore if provider doesn't support raw SQL (e.g. tests with InMemory).
+            // Non-fatal: ignore on providers that do not support this DDL (e.g. InMemory).
+        }
+
+        // Ensure the legacy Rating column in Movies has a DEFAULT constraint so that
+        // EF Core inserts (which omit the column) do not violate the NOT NULL constraint.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (
+    SELECT 1 FROM sys.default_constraints
+    WHERE parent_object_id = OBJECT_ID('Movies')
+      AND col_name(parent_object_id, parent_column_id) = 'Rating')
+BEGIN
+    ALTER TABLE [Movies] ADD DEFAULT 0.0 FOR [Rating]
+END");
+        }
+        catch
+        {
+            // Non-fatal: ignore on providers that do not support this DDL (e.g. InMemory).
         }
 
         // Smart seeding will handle duplicates/missing data below
@@ -122,13 +160,13 @@ END");
         // 4. Seed Movies
         var moviesToSeed = new List<Movie>
         {
-            new() { Title = "The Shawshank Redemption", Description = "Two imprisoned men bond over a number of years.", ReleaseYear = 1994, DurationMinutes = 142, AverageRating = 4.5, PosterUrl = "https://images.remote.com/poster1.jpg" },
-            new() { Title = "The Dark Knight", Description = "When the menace known as the Joker wreaks havoc.", ReleaseYear = 2008, DurationMinutes = 152, AverageRating = 4.3, PosterUrl = "https://images.remote.com/poster2.jpg" },
-            new() { Title = "Inception", Description = "A thief who steals corporate secrets through the use of dream-sharing technology.", ReleaseYear = 2010, DurationMinutes = 148, AverageRating = 4.2, PosterUrl = "https://images.remote.com/poster3.jpg" },
-            new() { Title = "Pulp Fiction", Description = "The lives of two mob hitmen, a boxer, a gangster and his wife.", ReleaseYear = 1994, DurationMinutes = 154, AverageRating = 4.4, PosterUrl = "https://images.remote.com/poster4.jpg" },
-            new() { Title = "Interstellar", Description = "A team of explorers travel through a wormhole in space.", ReleaseYear = 2014, DurationMinutes = 169, AverageRating = 4.6, PosterUrl = "https://images.remote.com/poster5.jpg" },
-            new() { Title = "The Avengers", Description = "Earth's mightiest heroes must come together.", ReleaseYear = 2012, DurationMinutes = 143, AverageRating = 4.1, PosterUrl = "https://images.remote.com/poster6.jpg" },
-            new() { Title = "Mission Impossible", Description = "An American agent, under false suspicion of disloyalty.", ReleaseYear = 1996, DurationMinutes = 110, AverageRating = 3.9, PosterUrl = "https://images.remote.com/poster7.jpg" }
+            new() { Title = "The Shawshank Redemption", Description = "Two imprisoned men bond over a number of years.", ReleaseYear = 1994, DurationMinutes = 142, AverageRating = 4.5, PosterUrl = "https://image.tmdb.org/t/p/w500/20f2GThu22hp5MgCA4dg3bZ3gTS.jpg" },
+            new() { Title = "The Dark Knight", Description = "When the menace known as the Joker wreaks havoc.", ReleaseYear = 2008, DurationMinutes = 152, AverageRating = 4.3, PosterUrl = "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg" },
+            new() { Title = "Inception", Description = "A thief who steals corporate secrets through the use of dream-sharing technology.", ReleaseYear = 2010, DurationMinutes = 148, AverageRating = 4.2, PosterUrl = "https://image.tmdb.org/t/p/w500/ljsZTbVsrQSqZgWeep2B1QiDKuh.jpg" },
+            new() { Title = "Pulp Fiction", Description = "The lives of two mob hitmen, a boxer, a gangster and his wife.", ReleaseYear = 1994, DurationMinutes = 154, AverageRating = 4.4, PosterUrl = "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg" },
+            new() { Title = "Interstellar", Description = "A team of explorers travel through a wormhole in space.", ReleaseYear = 2014, DurationMinutes = 169, AverageRating = 4.6, PosterUrl = "https://image.tmdb.org/t/p/w500/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg" },
+            new() { Title = "The Avengers", Description = "Earth's mightiest heroes must come together.", ReleaseYear = 2012, DurationMinutes = 143, AverageRating = 4.1, PosterUrl = "https://image.tmdb.org/t/p/w500/RYMX2wcKCBAr24UyPD7KE3wYQly.jpg" },
+            new() { Title = "Mission Impossible", Description = "An American agent, under false suspicion of disloyalty.", ReleaseYear = 1996, DurationMinutes = 110, AverageRating = 3.9, PosterUrl = "https://image.tmdb.org/t/p/w500/7K4PtyCCbkmOO9UgNqxmW8zAOMF.jpg" }
         };
 
         foreach (var m in moviesToSeed)
