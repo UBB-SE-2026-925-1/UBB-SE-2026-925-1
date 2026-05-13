@@ -72,18 +72,71 @@ END");
             // Non-fatal: ignore on providers that do not support this DDL (e.g. InMemory).
         }
 
-        // Ensure the legacy Rating column in Movies has a DEFAULT constraint so that
-        // EF Core inserts (which omit the column) do not violate the NOT NULL constraint.
+        // Ensure the Rating column exists on Movies (added as a shadow property by the david-task PR).
+        // EnsureCreated() does not add columns to an already-created table.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'Movies') AND name = N'Rating')
+BEGIN
+    ALTER TABLE [Movies] ADD [Rating] float NOT NULL DEFAULT 0.0;
+END");
+        }
+        catch
+        {
+            // Non-fatal: ignore on providers that do not support this DDL (e.g. InMemory).
+        }
+
+        // Ensure the Rating column has a DEFAULT constraint so EF Core inserts (which omit
+        // the column) do not violate the NOT NULL constraint on databases where the column
+        // already existed without a default.
         try
         {
             context.Database.ExecuteSqlRaw(@"
 IF NOT EXISTS (
     SELECT 1 FROM sys.default_constraints
-    WHERE parent_object_id = OBJECT_ID('Movies')
-      AND col_name(parent_object_id, parent_column_id) = 'Rating')
+    WHERE parent_object_id = OBJECT_ID(N'Movies')
+      AND col_name(parent_object_id, parent_column_id) = N'Rating')
 BEGIN
-    ALTER TABLE [Movies] ADD DEFAULT 0.0 FOR [Rating]
+    ALTER TABLE [Movies] ADD DEFAULT 0.0 FOR [Rating];
 END");
+        }
+        catch
+        {
+            // Non-fatal: ignore on providers that do not support this DDL (e.g. InMemory).
+        }
+
+        // Rename MoviesId → MovieId in the three many-to-many join tables.
+        // The david-task PR changed MovieConfiguration.cs to use HasForeignKey("MovieId") /
+        // HasKey("XxxId","MovieId"), but existing databases still have the old "MoviesId" column.
+        // sp_rename is the safe SQL Server way to rename a column that participates in a PK.
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'MovieGenres') AND name = N'MoviesId')
+    EXEC sp_rename N'MovieGenres.MoviesId', N'MovieId', N'COLUMN';");
+        }
+        catch
+        {
+            // Non-fatal: ignore on providers that do not support this DDL (e.g. InMemory).
+        }
+
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'MovieActors') AND name = N'MoviesId')
+    EXEC sp_rename N'MovieActors.MoviesId', N'MovieId', N'COLUMN';");
+        }
+        catch
+        {
+            // Non-fatal: ignore on providers that do not support this DDL (e.g. InMemory).
+        }
+
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'MovieDirectors') AND name = N'MoviesId')
+    EXEC sp_rename N'MovieDirectors.MoviesId', N'MovieId', N'COLUMN';");
         }
         catch
         {
