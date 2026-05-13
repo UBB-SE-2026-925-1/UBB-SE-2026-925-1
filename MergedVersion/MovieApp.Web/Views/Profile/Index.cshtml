@@ -1,0 +1,116 @@
+@model MovieApp.Web.Models.ProfileViewModel
+@{
+    ViewData["Title"] = $"{Model.Username} — Profile";
+    var earned = Model.EarnedBadges.Select(b => b.BadgeId).ToHashSet();
+    int pct = Model.AllBadges.Count > 0
+        ? (int)Math.Round((double)Model.EarnedBadges.Count / Model.AllBadges.Count * 100)
+        : 0;
+}
+
+<div class="container py-4">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold fs-3"
+             style="width:72px;height:72px;flex-shrink:0;">
+            @(Model.Username.Length > 0 ? Model.Username[0].ToString().ToUpper() : "?")
+        </div>
+        <div>
+            <h1 class="mb-0 h2">@Model.Username</h1>
+            <small class="text-muted">Member profile</small>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card text-center shadow-sm h-100">
+                <div class="card-body">
+                    <div class="fs-1 fw-bold text-primary">@Model.Stats.TotalPoints</div>
+                    <div class="text-muted small">Total Points</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card text-center shadow-sm h-100">
+                <div class="card-body">
+                    <div class="fs-1 fw-bold text-success">@Model.Stats.WeeklyScore</div>
+                    <div class="text-muted small">Weekly Score</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card text-center shadow-sm h-100">
+                <div class="card-body">
+                    <div class="fs-1 fw-bold text-warning">@Model.EarnedBadges.Count</div>
+                    <div class="text-muted small">Badges Earned</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card text-center shadow-sm h-100">
+                <div class="card-body">
+                    <div class="fs-1 fw-bold text-info">@pct<span class="fs-4">%</span></div>
+                    <div class="text-muted small">Collection Complete</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.AllBadges.Count > 0)
+    {
+        <div class="mb-5">
+            <div class="d-flex justify-content-between small text-muted mb-1">
+                <span>Badge progress</span>
+                <span>@Model.EarnedBadges.Count / @Model.AllBadges.Count</span>
+            </div>
+            <div class="progress" style="height:12px;" role="progressbar"
+                 aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+                     style="width:@pct%"></div>
+            </div>
+        </div>
+    }
+
+    <h2 class="h4 mb-3">Badge Collection</h2>
+
+    @if (!Model.AllBadges.Any())
+    {
+        <div class="alert alert-info">No badges are defined in the system yet.</div>
+    }
+    else
+    {
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
+            @foreach (var badge in Model.AllBadges.OrderBy(b => b.Name))
+            {
+                bool isEarned = earned.Contains(badge.BadgeId);
+                <div class="col">
+                    <div class="card text-center h-100 shadow-sm @(isEarned ? "" : "opacity-50")"
+                         title="@badge.Name — @(isEarned ? "Earned" : $"Requires {badge.CriteriaValue} pts")">
+                        <div class="card-body p-2">
+                            <div class="mb-2" style="font-size:2rem;line-height:1;">
+                                @if (isEarned)
+                                {
+                                    <span class="text-warning">&#9733;</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">&#9734;</span>
+                                }
+                            </div>
+                            <div class="fw-semibold small lh-sm">@badge.Name</div>
+                            @if (!isEarned)
+                            {
+                                <div class="text-muted" style="font-size:0.7rem;">@badge.CriteriaValue pts needed</div>
+                            }
+                        </div>
+                        @if (isEarned)
+                        {
+                            <div class="card-footer p-1 bg-warning bg-opacity-25">
+                                <small class="text-warning fw-semibold">Earned</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

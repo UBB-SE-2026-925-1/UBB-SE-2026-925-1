@@ -1,9 +1,11 @@
 #nullable enable
 using Moq;
+using MovieApp.Core.DTOs;
 using MovieApp.Core.Repositories;
 using MovieApp.Core.Interfaces.Repository;
 using MovieApp.Core.Models;
 using MovieApp.Core.Services;
+using MovieApp.WebAPI.Controllers.DTOs;
 using Xunit;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,31 +39,27 @@ public class BadgeServiceTests
     [Fact]
     public async Task GetUserBadges_WhenUserHasBadges_ReturnsBadgesForThatUser()
     {
-        var badge1 = new Badge { BadgeId = 1, Name = "The Snob", CriteriaValue = 10 };
-        var badge2 = new Badge { BadgeId = 2, Name = "The Joker", CriteriaValue = 5 };
-        var userBadges = new List<UserBadge>
-        {
-            new () { User = new User { Id = 1, AuthProvider="", AuthSubject="", Username="" }, Badge = badge1 },
-            new () { User = new User { Id = 1, AuthProvider="", AuthSubject="", Username="" }, Badge = badge2 },
-            new () { User = new User { Id = 2, AuthProvider="", AuthSubject="", Username="" }, Badge = badge1 }
-        };
-        userBadgeRepoMock.Setup(r => r.GetAllAsync(default)).ReturnsAsync(userBadges);
+        var badge1Dto = new BadgeDTO { BadgeId = 1, Name = "The Snob", CriteriaValue = 10 };
+        var badge2Dto = new BadgeDTO { BadgeId = 2, Name = "The Joker", CriteriaValue = 5 };
+        badgeRepoMock.Setup(r => r.GetBadgesForUserAsync(1, default))
+            .ReturnsAsync(new List<BadgeDTO> { badge1Dto, badge2Dto });
 
         var result = await sut.GetUserBadgesAsync(1);
 
-        Assert.Equal(2, result.Count);
-        Assert.Contains(result, b => b.BadgeId == 1);
-        Assert.Contains(result, b => b.BadgeId == 2);
+        Assert.Equal(2, result.Badges.Count);
+        Assert.Contains(result.Badges, b => b.BadgeId == 1);
+        Assert.Contains(result.Badges, b => b.BadgeId == 2);
     }
 
     [Fact]
     public async Task GetUserBadges_WhenUserHasNoBadges_ReturnsEmptyList()
     {
-        userBadgeRepoMock.Setup(r => r.GetAllAsync(default)).ReturnsAsync(new List<UserBadge>());
+        badgeRepoMock.Setup(r => r.GetBadgesForUserAsync(99, default))
+            .ReturnsAsync(new List<BadgeDTO>());
 
         var result = await sut.GetUserBadgesAsync(99);
 
-        Assert.Empty(result);
+        Assert.Empty(result.Badges);
     }
 
     // --- GetAllBadges ---

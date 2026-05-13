@@ -41,6 +41,11 @@ public class ApiClient
                 using var response = await this.httpClient.GetAsync(endpoint, ct);
                 if (!response.IsSuccessStatusCode)
                 {
+                    if (response.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return default;
+                    }
+
                     if (IsTransientStatusCode(response.StatusCode) && retryCount < maxRetries)
                     {
                         retryCount++;

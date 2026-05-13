@@ -13,7 +13,10 @@ builder.Services.AddMemoryCache();
 var apiBaseUrl = builder.Configuration["WebApi:BaseUrl"] ?? "http://localhost:5207";
 
 builder.Services.AddHttpClient("MovieApi", client =>
-    client.BaseAddress = new Uri(apiBaseUrl));
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(10); // fail fast so pages show error banner instead of hanging
+});
 
 // ApiClient is scoped so each request gets its own instance (important for
 // per-request Bearer token injection once Person 2's JWT flow is wired in).
@@ -34,6 +37,9 @@ builder.Services.AddScoped<IEventRepository, RemoteEventRepository>();
 builder.Services.AddScoped<IUserEventAttendanceRepository, RemoteUserEventAttendanceRepository>();
 builder.Services.AddScoped<IBattleService, RemoteBattleService>();
 builder.Services.AddScoped<IPointService, RemotePointService>();
+builder.Services.AddScoped<IBadgeService, RemoteBadgeService>();
+builder.Services.AddScoped<IMarathonService, RemoteMarathonService>();
+builder.Services.AddScoped<IFavoriteEventService, RemoteFavoriteEventService>();
 
 
 // ExternalReviewService is registered with no providers for now.
@@ -50,6 +56,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseStatusCodePagesWithReExecute("/Home/NotFound");
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();

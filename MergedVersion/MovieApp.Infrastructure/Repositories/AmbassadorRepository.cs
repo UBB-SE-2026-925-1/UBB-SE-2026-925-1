@@ -85,8 +85,8 @@ public sealed class AmbassadorRepository : IAmbassadorRepository
     {
         return await this.context.ReferralLogs
             .Where(rl => rl.AmbassadorId == ambassadorId)
-            .Include(rl => rl.ReferredUserId)
-            .Include(rl => rl.EventId)
+            .Include(rl => rl.ReferredUser)
+            .Include(rl => rl.Event)
             .Select(rl => new ReferralHistoryItem
             {
                 FriendName = rl.ReferredUser != null ? rl.ReferredUser.Username : "Unknown",
