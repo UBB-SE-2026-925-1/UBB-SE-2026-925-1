@@ -1,33 +1,112 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MovieApp.Core.Interfaces.Service;
 using MovieApp.Core.Models;
+using MovieApp.Infrastructure;
+using MovieApp.Infrastructure.Data;
 
 namespace MovieApp.WebAPI.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
+[ApiController]
 public class CommentsController : ControllerBase
 {
-    private readonly ICommentService commentService;
+    private readonly MovieAppDbContext _context;
+    private readonly ICommentService _commentService;
 
-    public CommentsController(ICommentService commentService)
+    public CommentsController(MovieAppDbContext context, ICommentService commentService)
     {
-        this.commentService = commentService;
+        _context = context;
+        _commentService = commentService;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Comment>>> GetComments()
+    {
+        return await _context.Comments.ToListAsync();
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Comment>> GetComment(int id)
+    {
+        var comment = await _context.Comments.FindAsync(id);
+
+        if (comment == null)
+        {
+            return NotFound();
+        }
+
+        return comment;
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutComment(int id, Comment comment)
+    {
+        if (id != comment.MessageId)
+        {
+            return BadRequest();
+        }
+
+        _context.Entry(comment).State = EntityState.Modified;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!CommentExists(id))
+            {
+                return NotFound();
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        return NoContent();
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Comment>> PostComment(Comment comment)
+    {
+        _context.Comments.Add(comment);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction("GetComment", new { id = comment.MessageId }, comment);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteComment(int id)
+    {
+        var comment = await _context.Comments.FindAsync(id);
+        if (comment == null)
+        {
+            return NotFound();
+        }
+
+        _context.Comments.Remove(comment);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 
     [HttpGet("movie/{movieId}")]
     public async Task<ActionResult<IEnumerable<Comment>>> GetCommentsForMovie(int movieId)
     {
-        var comments = await this.commentService.GetCommentsForMovieAsync(movieId);
-        return Ok(comments);
+        return await _context.Comments
+            .Where(c => c.MovieId == movieId)
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync();
     }
 
-    [HttpPost]
+    [HttpPost("add")]
     public async Task<ActionResult<Comment>> AddComment([FromBody] AddCommentRequest request)
     {
         try
         {
-            var comment = await this.commentService.AddCommentAsync(
+            var comment = await _commentService.AddCommentAsync(
                 request.UserId,
                 request.MovieId,
                 request.Content);
@@ -44,7 +123,7 @@ public class CommentsController : ControllerBase
     {
         try
         {
-            var comment = await this.commentService.AddReplyAsync(
+            var comment = await _commentService.AddReplyAsync(
                 request.UserId,
                 request.ParentCommentId,
                 request.Content);
@@ -56,11 +135,9 @@ public class CommentsController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteComment(int id)
+    private bool CommentExists(int id)
     {
-        await this.commentService.DeleteCommentAsync(id);
-        return NoContent();
+        return _context.Comments.Any(e => e.MessageId == id);
     }
 
     public class AddCommentRequest

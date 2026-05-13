@@ -1,71 +1,128 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MovieApp.Core.Models;
-using MovieApp.Core.Repositories;
+using MovieApp.Infrastructure;
+using MovieApp.Infrastructure.Data;
 
 namespace MovieApp.WebAPI.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
+[ApiController]
 public class EventsController : ControllerBase
 {
-    private readonly IEventRepository eventRepository;
-    private readonly IMovieRepository movieRepository;
-    private readonly IFavoriteEventRepository favoriteEventRepository;
-    private readonly IUserEventAttendanceRepository attendanceRepository;
+    private readonly MovieAppDbContext _context;
 
-    public EventsController(
-        IEventRepository eventRepository,
-        IMovieRepository movieRepository,
-        IFavoriteEventRepository favoriteEventRepository,
-        IUserEventAttendanceRepository attendanceRepository)
+    public EventsController(MovieAppDbContext context)
     {
-        this.eventRepository = eventRepository;
-        this.movieRepository = movieRepository;
-        this.favoriteEventRepository = favoriteEventRepository;
-        this.attendanceRepository = attendanceRepository;
+        _context = context;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Event>>> GetEvents()
     {
-        var events = await this.eventRepository.GetAllAsync();
-        return Ok(events);
+        return await _context.Events.ToListAsync();
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Event>> GetEvent(int id)
     {
-        var eventDetails = await this.eventRepository.FindByIdAsync(id);
-        if (eventDetails == null) return NotFound();
-        return Ok(eventDetails);
+        var @event = await _context.Events.FindAsync(id);
+
+        if (@event == null)
+        {
+            return NotFound();
+        }
+
+        return @event;
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutEvent(int id, Event @event)
+    {
+        if (id != @event.Id)
+        {
+            return BadRequest();
+        }
+
+        _context.Entry(@event).State = EntityState.Modified;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!EventExists(id))
+            {
+                return NotFound();
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        return NoContent();
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Event>> PostEvent(Event @event)
+    {
+        _context.Events.Add(@event);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction("GetEvent", new { id = @event.Id }, @event);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteEvent(int id)
+    {
+        var @event = await _context.Events.FindAsync(id);
+        if (@event == null)
+        {
+            return NotFound();
+        }
+
+        _context.Events.Remove(@event);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 
     [HttpGet("movie/{movieId}")]
     public async Task<ActionResult<IEnumerable<Event>>> GetEventsForMovie(int movieId)
     {
-        var eventIds = await this.movieRepository.FindScreeningEventIdsForMovieAsync(movieId);
-        var allEvents = await this.eventRepository.GetAllAsync();
-        var movieEvents = allEvents.Where(e => eventIds.Contains(e.Id));
-        return Ok(movieEvents);
+        var eventIds = await _context.Screenings
+            .Where(s => s.MovieId == movieId)
+            .Select(s => s.EventId)
+            .ToListAsync();
+
+        return await _context.Events
+            .Where(e => eventIds.Contains(e.Id))
+            .ToListAsync();
     }
 
     [HttpGet("user/{userId}/attendance")]
     public async Task<ActionResult<IEnumerable<int>>> GetAttendance(int userId)
     {
-        var attendance = await this.attendanceRepository.GetJoinedEventIdsAsync(userId);
-        return Ok(attendance);
+        return await _context.UserEventAttendances
+            .Where(a => a.UserId == userId)
+            .Select(a => a.EventId)
+            .ToListAsync();
     }
 
     [HttpPost("user/{userId}/attendance/join")]
     public async Task<IActionResult> JoinEvent(int userId, [FromQuery] int eventId)
     {
-        var joinedIds = await this.attendanceRepository.GetJoinedEventIdsAsync(userId);
-        if (joinedIds.Contains(eventId))
+        var alreadyJoined = await _context.UserEventAttendances
+            .AnyAsync(a => a.UserId == userId && a.EventId == eventId);
+
+        if (alreadyJoined)
         {
             return BadRequest("User already joined this event.");
         }
 
-        var eventDetails = await this.eventRepository.FindByIdAsync(eventId);
+        var eventDetails = await _context.Events.FindAsync(eventId);
         if (eventDetails == null) return NotFound("Event not found.");
 
         if (eventDetails.CurrentEnrollment >= eventDetails.MaxCapacity)
@@ -73,11 +130,12 @@ public class EventsController : ControllerBase
             return BadRequest("Event is full.");
         }
 
-        await this.attendanceRepository.JoinAsync(userId, eventId);
+        _context.UserEventAttendances.Add(new UserEventAttendance { UserId = userId, EventId = eventId });
         
-        // Update enrollment count
         eventDetails.CurrentEnrollment++;
-        await this.eventRepository.UpdateEventAsync(eventDetails);
+        _context.Entry(eventDetails).State = EntityState.Modified;
+
+        await _context.SaveChangesAsync();
 
         return Ok();
     }
@@ -85,20 +143,24 @@ public class EventsController : ControllerBase
     [HttpDelete("user/{userId}/attendance")]
     public async Task<IActionResult> CancelAttendance(int userId, [FromQuery] int eventId)
     {
-        var joinedIds = await this.attendanceRepository.GetJoinedEventIdsAsync(userId);
-        if (!joinedIds.Contains(eventId))
+        var attendance = await _context.UserEventAttendances
+            .FirstOrDefaultAsync(a => a.UserId == userId && a.EventId == eventId);
+
+        if (attendance == null)
         {
             return BadRequest("User is not registered for this event.");
         }
 
-        await this.attendanceRepository.CancelAttendanceAsync(userId, eventId);
+        _context.UserEventAttendances.Remove(attendance);
 
-        var eventDetails = await this.eventRepository.FindByIdAsync(eventId);
+        var eventDetails = await _context.Events.FindAsync(eventId);
         if (eventDetails != null && eventDetails.CurrentEnrollment > 0)
         {
             eventDetails.CurrentEnrollment--;
-            await this.eventRepository.UpdateEventAsync(eventDetails);
+            _context.Entry(eventDetails).State = EntityState.Modified;
         }
+
+        await _context.SaveChangesAsync();
 
         return Ok();
     }
@@ -106,68 +168,64 @@ public class EventsController : ControllerBase
     [HttpGet("favorites/{userId}")]
     public async Task<ActionResult<IEnumerable<FavoriteEvent>>> GetFavorites(int userId)
     {
-        var favorites = await this.favoriteEventRepository.FindByUserAsync(userId);
-        return Ok(favorites);
+        return await _context.FavoriteEvents
+            .Where(f => f.UserId == userId)
+            .ToListAsync();
     }
 
     [HttpGet("favorites/details/{userId}")]
     public async Task<ActionResult<IEnumerable<Event>>> GetFavoriteDetails(int userId)
     {
-        var favorites = await this.favoriteEventRepository.FindByUserAsync(userId);
-        var allEvents = await this.eventRepository.GetAllAsync();
-        var favoriteEventIds = favorites.Select(f => f.EventId).ToHashSet();
-        var details = allEvents.Where(e => favoriteEventIds.Contains(e.Id));
-        return Ok(details);
+        var favoriteEventIds = await _context.FavoriteEvents
+            .Where(f => f.UserId == userId)
+            .Select(f => f.EventId)
+            .ToListAsync();
+
+        return await _context.Events
+            .Where(e => favoriteEventIds.Contains(e.Id))
+            .ToListAsync();
     }
 
     [HttpPost("favorites/toggle")]
     public async Task<IActionResult> ToggleFavorite([FromBody] FavoriteToggleRequest request)
     {
-        var exists = await this.favoriteEventRepository.ExistsAsync(request.UserId, request.EventId);
-        if (exists)
+        var favorite = await _context.FavoriteEvents
+            .FirstOrDefaultAsync(f => f.UserId == request.UserId && f.EventId == request.EventId);
+
+        if (favorite != null)
         {
-            await this.favoriteEventRepository.RemoveAsync(request.UserId, request.EventId);
+            _context.FavoriteEvents.Remove(favorite);
         }
         else
         {
-            await this.favoriteEventRepository.AddAsync(request.UserId, request.EventId);
+            _context.FavoriteEvents.Add(new FavoriteEvent { UserId = request.UserId, EventId = request.EventId });
         }
+
+        await _context.SaveChangesAsync();
         return Ok();
     }
 
     [HttpGet("favorites/check")]
     public async Task<ActionResult<bool>> CheckFavorite([FromQuery] int userId, [FromQuery] int eventId)
     {
-        var exists = await this.favoriteEventRepository.ExistsAsync(userId, eventId);
-        return Ok(exists);
+        return await _context.FavoriteEvents.AnyAsync(f => f.UserId == userId && f.EventId == eventId);
     }
 
-    [HttpPost]
-    public async Task<ActionResult<int>> CreateEvent([FromBody] Event eventDetails)
-    {
-        var id = await this.eventRepository.AddAsync(eventDetails);
-        return Ok(id);
-    }
-
-    [HttpPost("update")]
-    public async Task<IActionResult> UpdateEvent([FromBody] Event eventDetails)
-    {
-        await this.eventRepository.UpdateEventAsync(eventDetails);
-        return Ok();
-    }
-
-    [HttpPost("{eventId}/enrollment")]
+    [HttpPost("update-enrollment")]
     public async Task<IActionResult> UpdateEnrollment(int eventId, [FromQuery] int count)
     {
-        await this.eventRepository.UpdateEnrollmentAsync(eventId, count);
+        var eventDetails = await _context.Events.FindAsync(eventId);
+        if (eventDetails == null) return NotFound();
+
+        eventDetails.CurrentEnrollment = count;
+        _context.Entry(eventDetails).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
         return Ok();
     }
 
-    [HttpDelete("{eventId}")]
-    public async Task<IActionResult> DeleteEvent(int eventId)
+    private bool EventExists(int id)
     {
-        await this.eventRepository.DeleteAsync(eventId);
-        return Ok();
+        return _context.Events.Any(e => e.Id == id);
     }
 
     public class FavoriteToggleRequest { public int UserId { get; set; } public int EventId { get; set; } }

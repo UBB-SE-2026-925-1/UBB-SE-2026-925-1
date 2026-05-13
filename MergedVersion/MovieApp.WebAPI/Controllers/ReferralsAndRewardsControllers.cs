@@ -1,95 +1,140 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MovieApp.Core.Models;
-using MovieApp.Core.Services;
 using MovieApp.Core.Repositories;
+using MovieApp.Core.Services;
+using MovieApp.Infrastructure;
+using MovieApp.Infrastructure.Data;
 
 namespace MovieApp.WebAPI.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
+[ApiController]
 public class ReferralsController : ControllerBase
 {
-    private readonly IReferralValidator referralValidator;
-    private readonly IReferralLogService referralLogService;
-    private readonly IAmbassadorRepository ambassadorRepository;
+    private readonly MovieAppDbContext _context;
+    private readonly IReferralValidator _referralValidator;
+    private readonly IReferralLogService _referralLogService;
 
     public ReferralsController(
+        MovieAppDbContext context,
         IReferralValidator referralValidator, 
-        IReferralLogService referralLogService,
-        IAmbassadorRepository ambassadorRepository)
+        IReferralLogService referralLogService)
     {
-        this.referralValidator = referralValidator;
-        this.referralLogService = referralLogService;
-        this.ambassadorRepository = ambassadorRepository;
+        _context = context;
+        _referralValidator = referralValidator;
+        _referralLogService = referralLogService;
     }
 
     [HttpGet("validate")]
     public async Task<ActionResult<bool>> ValidateCode([FromQuery] string code)
     {
-        var isValid = await this.referralValidator.IsValidReferralAsync(code, 0);
+        var isValid = await _referralValidator.IsValidReferralAsync(code, 0);
         return Ok(isValid);
     }
 
     [HttpGet("user/{userId}/code")]
     public async Task<ActionResult<string>> GetCode(int userId)
     {
-        var code = await this.ambassadorRepository.GetReferralCodeAsync(userId);
-        return Ok(code);
+        var profile = await _context.AmbassadorProfiles
+            .FirstOrDefaultAsync(ap => ap.UserId == userId);
+        return Ok(profile?.PermanentCode);
     }
 
     [HttpPost("profile")]
     public async Task<IActionResult> CreateProfile([FromBody] CreateProfileRequest request)
     {
-        await this.ambassadorRepository.CreateAmbassadorProfileAsync(request.UserId, request.Code);
+        var profile = new AmbassadorProfile
+        {
+            UserId = request.UserId,
+            PermanentCode = request.Code,
+            RewardBalance = 0
+        };
+        _context.AmbassadorProfiles.Add(profile);
+        await _context.SaveChangesAsync();
         return Ok();
     }
 
     [HttpGet("code/{code}/user")]
     public async Task<ActionResult<int?>> GetUserIdByCode(string code)
     {
-        var userId = await this.ambassadorRepository.GetUserIdByReferralCodeAsync(code);
-        return Ok(userId);
+        var profile = await _context.AmbassadorProfiles
+            .FirstOrDefaultAsync(ap => ap.PermanentCode == code);
+        return Ok(profile?.UserId);
     }
 
     [HttpPost("log")]
     public async Task<IActionResult> AddLog([FromBody] AddLogRequest request)
     {
-        await this.ambassadorRepository.AddReferralLogAsync(request.AmbassadorId, request.FriendId, request.EventId);
+        var log = new ReferralLog
+        {
+            AmbassadorId = request.AmbassadorId,
+            ReferredUserId = request.FriendId,
+            EventId = request.EventId,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.ReferralLogs.Add(log);
+        await _context.SaveChangesAsync();
         return Ok();
     }
 
     [HttpPost("reward/apply")]
     public async Task<ActionResult<bool>> ApplyReward([FromBody] ApplyRewardRequest request)
     {
-        var success = await this.ambassadorRepository.TryApplyRewardAsync(request.AmbassadorId);
-        return Ok(success);
+        var profile = await _context.AmbassadorProfiles
+            .FirstOrDefaultAsync(ap => ap.UserId == request.AmbassadorId);
+
+        if (profile == null) return false;
+
+        profile.RewardBalance++;
+        await _context.SaveChangesAsync();
+        return Ok(true);
     }
 
     [HttpGet("user/{userId}/history")]
     public async Task<ActionResult<IEnumerable<ReferralHistoryItem>>> GetHistory(int userId)
     {
-        var history = await this.ambassadorRepository.GetReferralHistoryAsync(userId);
+        var history = await _context.ReferralLogs
+            .Where(rl => rl.AmbassadorId == userId)
+            .Select(rl => new ReferralHistoryItem
+            {
+                FriendName = rl.ReferredUser != null ? rl.ReferredUser.Username : "Unknown",
+                EventTitle = rl.Event != null ? rl.Event.Title : "Deleted Event",
+                UsedAt = rl.CreatedAt
+            })
+            .ToListAsync();
         return Ok(history);
     }
 
     [HttpGet("user/{userId}/balance")]
     public async Task<ActionResult<int>> GetBalance(int userId)
     {
-        var balance = await this.ambassadorRepository.GetRewardBalanceAsync(userId);
-        return Ok(balance);
+        var profile = await _context.AmbassadorProfiles
+            .FirstOrDefaultAsync(ap => ap.UserId == userId);
+        return Ok(profile?.RewardBalance ?? 0);
     }
 
     [HttpPost("user/{userId}/balance/decrement")]
     public async Task<IActionResult> DecrementBalance(int userId)
     {
-        await this.ambassadorRepository.DecrementRewardBalanceAsync(userId);
+        var profile = await _context.AmbassadorProfiles
+            .FirstOrDefaultAsync(ap => ap.UserId == userId);
+
+        if (profile != null && profile.RewardBalance > 0)
+        {
+            profile.RewardBalance--;
+            await _context.SaveChangesAsync();
+        }
         return Ok();
     }
 
     [HttpGet("check")]
     public async Task<ActionResult<bool>> CheckLog([FromQuery] int ambassadorId, [FromQuery] int friendId, [FromQuery] int eventId)
     {
-        var exists = await this.ambassadorRepository.HasReferralLogAsync(ambassadorId, friendId, eventId);
+        var exists = await _context.ReferralLogs
+            .AnyAsync(rl => rl.AmbassadorId == ambassadorId &&
+                            rl.ReferredUserId == friendId &&
+                            rl.EventId == eventId);
         return Ok(exists);
     }
 
@@ -98,17 +143,17 @@ public class ReferralsController : ControllerBase
     public class ApplyRewardRequest { public int AmbassadorId { get; set; } }
 }
 
-[ApiController]
 [Route("api/[controller]")]
+[ApiController]
 public class RewardsController : ControllerBase
 {
-    private readonly ISlotMachineService slotMachineService;
-    private readonly IUserMovieDiscountRepository discountRepository;
+    private readonly MovieAppDbContext _context;
+    private readonly ISlotMachineService _slotMachineService;
 
-    public RewardsController(ISlotMachineService slotMachineService, IUserMovieDiscountRepository discountRepository)
+    public RewardsController(MovieAppDbContext context, ISlotMachineService slotMachineService)
     {
-        this.slotMachineService = slotMachineService;
-        this.discountRepository = discountRepository;
+        _context = context;
+        _slotMachineService = slotMachineService;
     }
 
     [HttpPost("claim/{userId}")]
@@ -116,7 +161,7 @@ public class RewardsController : ControllerBase
     {
         try
         {
-            await this.slotMachineService.RecordLoginAndCheckStreakAsync(userId);
+            await _slotMachineService.RecordLoginAndCheckStreakAsync(userId);
             return Ok();
         }
         catch (Exception ex)
@@ -125,17 +170,6 @@ public class RewardsController : ControllerBase
         }
     }
 
-    [HttpGet("user/{userId}")]
-    public async Task<ActionResult<IEnumerable<Reward>>> GetUserRewards(int userId)
-    {
-        var rewards = await this.discountRepository.GetDiscountsForUserAsync(userId);
-        return Ok(rewards);
-    }
 
-    [HttpPost("{id}/redeem")]
-    public async Task<IActionResult> RedeemReward(int id)
-    {
-        await this.discountRepository.MarkRedeemedAsync(id);
-        return Ok();
-    }
+
 }

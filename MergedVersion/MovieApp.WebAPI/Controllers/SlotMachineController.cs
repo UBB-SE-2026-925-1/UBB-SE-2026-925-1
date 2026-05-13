@@ -1,18 +1,23 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MovieApp.Core.Models;
 using MovieApp.Core.Services;
+using MovieApp.Infrastructure;
+using MovieApp.Infrastructure.Data;
 
 namespace MovieApp.WebAPI.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
+[ApiController]
 public class SlotMachineController : ControllerBase
 {
-    private readonly ISlotMachineService slotMachineService;
+    private readonly MovieAppDbContext _context;
+    private readonly ISlotMachineService _slotMachineService;
 
-    public SlotMachineController(ISlotMachineService slotMachineService)
+    public SlotMachineController(MovieAppDbContext context, ISlotMachineService slotMachineService)
     {
-        this.slotMachineService = slotMachineService;
+        _context = context;
+        _slotMachineService = slotMachineService;
     }
 
     [HttpPost("spin/{userId}")]
@@ -20,7 +25,7 @@ public class SlotMachineController : ControllerBase
     {
         try
         {
-            var result = await this.slotMachineService.SpinAsync(userId);
+            var result = await _slotMachineService.SpinAsync(userId);
             return Ok(result);
         }
         catch (Exception ex)
@@ -32,77 +37,74 @@ public class SlotMachineController : ControllerBase
     [HttpGet("state/{userId}")]
     public async Task<ActionResult<UserSpinData>> GetState(int userId)
     {
-        var state = await this.slotMachineService.GetUserSpinStateAsync(userId);
+        var state = await _slotMachineService.GetUserSpinStateAsync(userId);
         return Ok(state);
     }
 
     [HttpGet("reels/genres")]
     public async Task<ActionResult<IEnumerable<Genre>>> GetGenres()
     {
-        var genres = await this.slotMachineService.GetGenresAsync();
-        return Ok(genres);
+        return await _context.Genres.ToListAsync();
     }
 
     [HttpGet("reels/genres/random")]
     public async Task<ActionResult<Genre>> GetRandomGenre()
     {
-        var genre = await this.slotMachineService.GetRandomGenreAsync();
+        var genre = await _slotMachineService.GetRandomGenreAsync();
         return Ok(genre);
     }
 
     [HttpGet("reels/actors")]
     public async Task<ActionResult<IEnumerable<Actor>>> GetActors()
     {
-        var actors = await this.slotMachineService.GetActorsAsync();
-        return Ok(actors);
+        return await _context.Actors.ToListAsync();
     }
 
     [HttpGet("reels/actors/random")]
     public async Task<ActionResult<Actor>> GetRandomActor()
     {
-        var actor = await this.slotMachineService.GetRandomActorAsync();
+        var actor = await _slotMachineService.GetRandomActorAsync();
         return Ok(actor);
     }
 
     [HttpGet("reels/directors")]
     public async Task<ActionResult<IEnumerable<Director>>> GetDirectors()
     {
-        var directors = await this.slotMachineService.GetDirectorsAsync();
-        return Ok(directors);
+        return await _context.Directors.ToListAsync();
     }
 
     [HttpGet("reels/directors/random")]
     public async Task<ActionResult<Director>> GetRandomDirector()
     {
-        var director = await this.slotMachineService.GetRandomDirectorAsync();
+        var director = await _slotMachineService.GetRandomDirectorAsync();
         return Ok(director);
     }
 
     [HttpPost("bonus/{userId}")]
     public async Task<ActionResult<bool>> GrantBonusSpin(int userId)
     {
-        var result = await this.slotMachineService.GrantBonusSpinForEventParticipationAsync(userId);
+        var result = await _slotMachineService.GrantBonusSpinForEventParticipationAsync(userId);
         return Ok(result);
     }
 
     [HttpPost("login-streak/{userId}")]
     public async Task<ActionResult<bool>> RecordLogin(int userId)
     {
-        var result = await this.slotMachineService.RecordLoginAndCheckStreakAsync(userId);
+        var result = await _slotMachineService.RecordLoginAndCheckStreakAsync(userId);
         return Ok(result);
     }
 
     [HttpPost("streak-spin/{userId}")]
     public async Task<ActionResult<bool>> GrantStreakSpin(int userId)
     {
-        var result = await this.slotMachineService.GrantStreakSpinAsync(userId);
+        var result = await _slotMachineService.GrantStreakSpinAsync(userId);
         return Ok(result);
     }
 
     [HttpGet("available/{userId}")]
     public async Task<ActionResult<int>> GetAvailableSpins(int userId)
     {
-        var result = await this.slotMachineService.GetAvailableSpinsAsync(userId);
+        var result = await _slotMachineService.GetAvailableSpinsAsync(userId);
         return Ok(result);
     }
 }

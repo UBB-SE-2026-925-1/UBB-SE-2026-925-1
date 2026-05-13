@@ -1,95 +1,96 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MovieApp.Core.Models;
-using MovieApp.Core.Repositories;
-using MovieApp.Core.Services;
+using MovieApp.Infrastructure;
+using MovieApp.Infrastructure.Data;
+
 namespace MovieApp.WebAPI.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
+[ApiController]
 public class MarathonsController : ControllerBase
 {
-    private readonly IMarathonService marathonService;
+    private readonly MovieAppDbContext _context;
 
-    public MarathonsController(IMarathonService marathonService)
+    public MarathonsController(MovieAppDbContext context)
     {
-        this.marathonService = marathonService;
-    }
-
-    [HttpGet("weekly/{userId}")]
-    public async Task<ActionResult<IEnumerable<Marathon>>> GetWeeklyMarathons(int userId)
-    {
-        var marathons = await this.marathonService.GetWeeklyMarathonsAsync(userId);
-        return Ok(marathons);
-    }
-
-    [HttpGet("{id}/movies")]
-    public async Task<ActionResult<IEnumerable<Movie>>> GetMarathonMovies(int id)
-    {
-        var movies = await this.marathonService.GetMoviesForMarathonAsync(id);
-        return Ok(movies);
-    }
-
-    [HttpGet("{id}/progress/{userId}")]
-    public async Task<ActionResult<MarathonProgress>> GetProgress(int id, int userId)
-    {
-        var progress = await this.marathonService.GetUserProgressAsync(userId, id);
-        if (progress == null) return NotFound();
-        return Ok(progress);
-    }
-
-    [HttpPost("{id}/start")]
-    public async Task<ActionResult<bool>> StartMarathon(int id)
-    {
-        var success = await this.marathonService.StartMarathonAsync(id);
-        return Ok(success);
-    }
-
-    [HttpGet("{id}/leaderboard")]
-    public async Task<ActionResult<IEnumerable<LeaderboardEntry>>> GetLeaderboard(int id)
-    {
-        var leaderboard = await this.marathonService.GetLeaderboardWithUsernamesAsync(id);
-        return Ok(leaderboard);
+        _context = context;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Marathon>>> GetMarathons([FromServices] IMarathonRepository marathonRepository)
+    public async Task<ActionResult<IEnumerable<Marathon>>> GetMarathons()
     {
-        var marathons = await marathonRepository.GetActiveMarathonsAsync();
-        return Ok(marathons);
+        return await _context.Marathons.ToListAsync();
     }
 
-    [HttpPost("{id}/quiz")]
-    public async Task<ActionResult> UpdateQuizResult(int id, [FromBody] int correctAnswersCount)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Marathon>> GetMarathon(int id)
     {
-        await this.marathonService.UpdateQuizResultAsync(id, correctAnswersCount);
-        return Ok();
+        var marathon = await _context.Marathons.FindAsync(id);
+
+        if (marathon == null)
+        {
+            return NotFound();
+        }
+
+        return marathon;
     }
 
-    [HttpPost("{id}/movies/{movieId}/log")]
-    public async Task<ActionResult<bool>> LogMovie(int id, int movieId, [FromBody] int correctAnswersCount)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutMarathon(int id, Marathon marathon)
     {
-        var success = await this.marathonService.LogMovieAsync(id, movieId, correctAnswersCount);
-        return Ok(success);
+        if (id != marathon.Id)
+        {
+            return BadRequest();
+        }
+
+        _context.Entry(marathon).State = EntityState.Modified;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!MarathonExists(id))
+            {
+                return NotFound();
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        return NoContent();
     }
 
-    [HttpGet("{id}/participants/count")]
-    public async Task<ActionResult<int>> GetParticipantCount(int id)
+    [HttpPost]
+    public async Task<ActionResult<Marathon>> PostMarathon(Marathon marathon)
     {
-        var count = await this.marathonService.GetParticipantCountAsync(id);
-        return Ok(count);
+        _context.Marathons.Add(marathon);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction("GetMarathon", new { id = marathon.Id }, marathon);
     }
 
-    [HttpGet("{id}/movies/count")]
-    public async Task<ActionResult<int>> GetMarathonMovieCount(int id)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteMarathon(int id)
     {
-        var count = await this.marathonService.GetMarathonMovieCountAsync(id);
-        return Ok(count);
+        var marathon = await _context.Marathons.FindAsync(id);
+        if (marathon == null)
+        {
+            return NotFound();
+        }
+
+        _context.Marathons.Remove(marathon);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 
-    [HttpGet("{id}/prerequisite/{userId}")]
-    public async Task<ActionResult<bool>> IsPrerequisiteCompleted(int id, int userId)
+    private bool MarathonExists(int id)
     {
-        var isCompleted = await this.marathonService.IsPrerequisiteCompletedAsync(userId, id);
-        return Ok(isCompleted);
+        return _context.Marathons.Any(e => e.Id == id);
     }
 }

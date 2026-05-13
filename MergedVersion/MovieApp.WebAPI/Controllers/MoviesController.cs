@@ -1,32 +1,37 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MovieApp.Core.Interfaces.Service;
 using MovieApp.Core.Models;
 using MovieApp.Core.Repositories;
+using MovieApp.Infrastructure;
+using MovieApp.Infrastructure.Data;
 
 namespace MovieApp.WebAPI.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
+[ApiController]
 public class MoviesController : ControllerBase
 {
-    /// <summary>Smallest valid auto-generated comment identifier in the database. Used to distinguish a real parent reference from "not set".</summary>
     private const int MinimumValidCommentId = 1;
 
-    private readonly ICatalogService catalogService;
-    private readonly IMovieRepository movieRepository;
-    private readonly IReviewService reviewService;
-    private readonly ICommentService commentService;
+    private readonly MovieAppDbContext _context;
+    private readonly ICatalogService _catalogService;
+    private readonly IMovieRepository _movieRepository;
+    private readonly IReviewService _reviewService;
+    private readonly ICommentService _commentService;
 
     public MoviesController(
+        MovieAppDbContext context,
         ICatalogService catalogService,
         IMovieRepository movieRepository,
         IReviewService reviewService,
         ICommentService commentService)
     {
-        this.catalogService = catalogService;
-        this.movieRepository = movieRepository;
-        this.reviewService = reviewService;
-        this.commentService = commentService;
+        _context = context;
+        _catalogService = catalogService;
+        _movieRepository = movieRepository;
+        _reviewService = reviewService;
+        _commentService = commentService;
     }
 
     [HttpGet]
@@ -34,7 +39,7 @@ public class MoviesController : ControllerBase
     {
         if (!string.IsNullOrEmpty(query))
         {
-            return await this.catalogService.SearchMoviesAsync(query);
+            return await _catalogService.SearchMoviesAsync(query);
         }
 
         if (!string.IsNullOrEmpty(genres) || minRating.HasValue)
@@ -43,20 +48,21 @@ public class MoviesController : ControllerBase
             if (!string.IsNullOrEmpty(genres))
             {
                 var genreNames = genres.Split(',');
-                var allGenres = await this.movieRepository.GetGenresAsync();
+                var allGenres = await _movieRepository.GetGenresAsync();
                 genreList = allGenres.Where(g => genreNames.Contains(g.Name)).ToList();
             }
 
-            return await this.catalogService.FilterMoviesAsync(genreList, minRating ?? 0f);
+            return await _catalogService.FilterMoviesAsync(genreList, minRating ?? 0f);
         }
 
-        return await this.catalogService.GetAllMoviesAsync();
+        return await _context.Movies.ToListAsync();
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Movie>> GetMovie(int id)
     {
-        var movie = await this.catalogService.GetMovieByIdAsync(id);
+        var movie = await _context.Movies.FindAsync(id);
+
         if (movie == null)
         {
             return NotFound();
@@ -65,20 +71,72 @@ public class MoviesController : ControllerBase
         return movie;
     }
 
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutMovie(int id, Movie movie)
+    {
+        if (id != movie.Id)
+        {
+            return BadRequest();
+        }
+
+        _context.Entry(movie).State = EntityState.Modified;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!MovieExists(id))
+            {
+                return NotFound();
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        return NoContent();
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<Movie>> PostMovie(Movie movie)
+    {
+        _context.Movies.Add(movie);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction("GetMovie", new { id = movie.Id }, movie);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteMovie(int id)
+    {
+        var movie = await _context.Movies.FindAsync(id);
+        if (movie == null)
+        {
+            return NotFound();
+        }
+
+        _context.Movies.Remove(movie);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     [HttpGet("genres")]
     public async Task<ActionResult<IEnumerable<Genre>>> GetGenres()
     {
-        var genres = await this.movieRepository.GetGenresAsync();
-        return Ok(genres);
+        return await _context.Genres.ToListAsync();
     }
 
-    // ---- Reviews (nested routes per debugging plan: /api/movies/{movieId}/reviews) ----
 
     [HttpGet("{movieId}/reviews")]
     public async Task<ActionResult<IEnumerable<Review>>> GetReviewsForMovie(int movieId)
     {
-        var reviewsForMovie = await this.reviewService.GetReviewsForMovieAsync(movieId);
-        return Ok(reviewsForMovie);
+        return await _context.Reviews
+            .Where(r => r.Movie != null && r.Movie.Id == movieId)
+            .ToListAsync();
     }
 
     [HttpPost("{movieId}/reviews")]
@@ -86,7 +144,7 @@ public class MoviesController : ControllerBase
     {
         try
         {
-            var createdReview = await this.reviewService.AddReviewAsync(request.UserId, movieId, request.Rating, request.Content);
+            var createdReview = await _reviewService.AddReviewAsync(request.UserId, movieId, request.Rating, request.Content);
             return Ok(createdReview);
         }
         catch (InvalidOperationException ex)
@@ -98,17 +156,17 @@ public class MoviesController : ControllerBase
     [HttpGet("{movieId}/reviews/average")]
     public async Task<ActionResult<double>> GetAverageRatingForMovie(int movieId)
     {
-        var averageStarRating = await this.reviewService.GetAverageRatingAsync(movieId);
+        var averageStarRating = await _reviewService.GetAverageRatingAsync(movieId);
         return Ok(averageStarRating);
     }
 
-    // ---- Comments (nested routes per debugging plan: /api/movies/{movieId}/comments) ----
 
     [HttpGet("{movieId}/comments")]
     public async Task<ActionResult<IEnumerable<Comment>>> GetCommentsForMovie(int movieId)
     {
-        var commentsForMovie = await this.commentService.GetCommentsForMovieAsync(movieId);
-        return Ok(commentsForMovie);
+        return await _context.Comments
+            .Where(c => c.MovieId == movieId)
+            .ToListAsync();
     }
 
     [HttpPost("{movieId}/comments")]
@@ -116,14 +174,13 @@ public class MoviesController : ControllerBase
     {
         try
         {
-            // ParentCommentId is optional — when present and well-formed we route through AddReplyAsync to support threaded replies.
             bool isReplyToExistingComment =
                 request.ParentCommentId.HasValue &&
                 request.ParentCommentId.Value >= MinimumValidCommentId;
 
             Comment createdComment = isReplyToExistingComment
-                ? await this.commentService.AddReplyAsync(request.UserId, request.ParentCommentId!.Value, request.Content)
-                : await this.commentService.AddCommentAsync(request.UserId, movieId, request.Content);
+                ? await _commentService.AddReplyAsync(request.UserId, request.ParentCommentId!.Value, request.Content)
+                : await _commentService.AddCommentAsync(request.UserId, movieId, request.Content);
 
             return Ok(createdComment);
         }
@@ -131,6 +188,11 @@ public class MoviesController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
+    }
+
+    private bool MovieExists(int id)
+    {
+        return _context.Movies.Any(e => e.Id == id);
     }
 
     public class AddReviewRequest
