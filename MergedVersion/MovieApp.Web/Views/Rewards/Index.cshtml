@@ -1,0 +1,89 @@
+﻿@model IEnumerable<MovieApp.Core.Models.Reward>
+
+@{
+    ViewData["Title"] = "Rewards";
+}
+
+<h2 class="mb-4">Rewards</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["Success"]
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        No rewards available.
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var reward in Model)
+        {
+            <div class="col-md-4 mb-4">
+
+                <div class="card h-100 @(reward.IsAvailable ? "" : "opacity-50")">
+
+                    <div class="card-body">
+
+                        <h5 class="card-title">
+                            @reward.RewardType
+                        </h5>
+
+                        <p class="card-text">
+                            Discount:
+                            <strong>@reward.DiscountValue</strong>
+                        </p>
+
+                        <p class="card-text">
+                            Scope:
+                            <strong>@reward.ApplicabilityScope</strong>
+                        </p>
+
+                        @if (reward.EventId != null)
+                        {
+                            <p class="card-text">
+                                Event ID:
+                                <strong>@reward.EventId</strong>
+                            </p>
+                        }
+
+                        @if (reward.IsAvailable)
+                        {
+                            <form asp-action="Redeem" method="post">
+                                @Html.AntiForgeryToken()
+
+                                <input type="hidden" name="id" value="@reward.RewardId" />
+                                <input type="hidden" name="eventId" value="@reward.EventId" />
+
+                                <button type="submit" class="btn btn-success">
+                                    Redeem
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">
+                                Redeemed
+                            </span>
+                        }
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+    </div>
+}

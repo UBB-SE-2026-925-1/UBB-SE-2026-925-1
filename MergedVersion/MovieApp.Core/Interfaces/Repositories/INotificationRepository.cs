@@ -30,6 +30,8 @@ public interface INotificationRepository
     /// <returns>A task representing the asynchronous operation.</returns>
     Task RemoveAsync(int notificationIdentifier, CancellationToken cancellationToken = default);
 
+    Task MarkAsReadAsync(int notificationIdentifier, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Retrieves all notifications for a specific user.
     /// </summary>
