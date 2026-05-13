@@ -163,7 +163,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
 // ORDER MATTERS: Authentication before Authorization

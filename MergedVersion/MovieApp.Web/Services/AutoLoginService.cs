@@ -17,52 +17,59 @@ public class AutoLoginService : IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        // Small delay to ensure the API is up (especially if running both projects together)
-
-        await Task.Delay(500, cancellationToken);
-
         var username = _configuration["BootstrapUser:Username"];
         var password = _configuration["BootstrapUser:Password"]!;
         var baseUrl = _configuration["WebApi:BaseUrl"]!;
 
-        try
-        {
-            using var http = new HttpClient();
-            var response = await http.PostAsJsonAsync(
-                $"{baseUrl}/api/auth/login",
-                new { Username = username, Password = password },
-                cancellationToken);
+        // The API may still be starting up (migrations + seeding on cold DB).
+        // Retry with backoff until it answers, up to ~30s total.
+        const int maxAttempts = 15;
+        var delay = TimeSpan.FromMilliseconds(500);
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
 
-            if (!response.IsSuccessStatusCode)
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            if (cancellationToken.IsCancellationRequested) return;
+
+            try
             {
-                _logger.LogError("Auto-login failed: {Status}", response.StatusCode);
-                return;
+                var response = await http.PostAsJsonAsync(
+                    $"{baseUrl}/api/auth/login",
+                    new { Username = username, Password = password },
+                    cancellationToken);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content
+                        .ReadFromJsonAsync<LoginResponse>(cancellationToken: cancellationToken);
+
+                    if (result?.Token is null)
+                    {
+                        _logger.LogError("Auto-login succeeded but token was null.");
+                        return;
+                    }
+
+                    using var scope = _serviceProvider.CreateScope();
+                    var tokenStore = scope.ServiceProvider.GetRequiredService<JwtTokenStore>();
+                    tokenStore.SetToken(result.Token);
+
+                    _logger.LogInformation("Auto-login successful on attempt {Attempt}. JWT acquired.", attempt);
+                    return;
+                }
+
+                _logger.LogWarning("Auto-login attempt {Attempt} returned {Status}.", attempt, response.StatusCode);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            {
+                _logger.LogWarning("Auto-login attempt {Attempt} failed: {Message}. Retrying...", attempt, ex.Message);
             }
 
-            var result = await response.Content
-                .ReadFromJsonAsync<LoginResponse>(cancellationToken: cancellationToken);
-
-            if (result?.Token is null)
-            {
-                _logger.LogError("auto-login succeeded but token was null.");
-                return;
-            }
-
-            //Store the token
-            using var scope = _serviceProvider.CreateScope();
-            var tokenStore = scope.ServiceProvider.GetRequiredService<JwtTokenStore>();
-            tokenStore.SetToken(result.Token);
-
-            //Inject into the shared ApiClient
-            var apiClient = scope.ServiceProvider.GetRequiredService<ApiClient>();
-            apiClient.SetBearerToken(result.Token);
-
-            _logger.LogInformation("Auto-login successful. JWT acquired and injected.");
+            await Task.Delay(delay, cancellationToken);
+            if (delay < TimeSpan.FromSeconds(3))
+                delay = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * 1.5);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Exception during auto-login");
-        }
+
+        _logger.LogError("Auto-login gave up after {Attempts} attempts.", maxAttempts);
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
