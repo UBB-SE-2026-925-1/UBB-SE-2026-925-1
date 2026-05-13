@@ -168,7 +168,7 @@ public sealed class NotificationService : INotificationService
     /// <inheritdoc />
     public Task MarkAsReadOrRemoveAsync(int notificationIdentifier, CancellationToken cancellationToken = default)
     {
-        return this.notificationRepository.RemoveAsync(notificationIdentifier, cancellationToken);
+        return this.notificationRepository.MarkAsReadAsync(notificationIdentifier, cancellationToken);
     }
 
     private async Task GenerateNotificationForFavoritesAsync(int eventIdentifier, string type, string message, CancellationToken cancellationToken)

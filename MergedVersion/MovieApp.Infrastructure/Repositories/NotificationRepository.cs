@@ -36,6 +36,16 @@ public sealed class NotificationRepository : INotificationRepository
             .OrderByDescending(n => n.CreatedAt)
             .ToListAsync(ct);
     }
-}
 
+    public async Task MarkAsReadAsync(int notificationId, CancellationToken ct = default)
+    {
+        var notification = await this.context.Notifications.FindAsync(new object[] { notificationId }, ct);
+
+        if (notification != null)
+        {
+            notification.State = NotificationState.Read;
+            await this.context.SaveChangesAsync(ct);
+        }
+    }
+}
 

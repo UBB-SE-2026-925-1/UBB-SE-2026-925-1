@@ -1,0 +1,66 @@
+@model MovieApp.Web.Models.MyEventsViewModel
+@{
+    ViewData["Title"] = "My events";
+}
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">My events</h1>
+        <p class="text-muted mb-0 small">Everything you've signed up for, past and present.</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+        </svg>
+        Browse all events
+    </a>
+</div>
+
+@if (TempData["StatusMessage"] is string status && !string.IsNullOrWhiteSpace(status))
+{
+    <div class="alert alert-info py-2 small">@status</div>
+}
+
+@if (Model.UpcomingEvents.Count == 0 && Model.PastEvents.Count == 0)
+{
+    <div class="alert alert-light border text-center py-4">
+        <strong>You haven't joined any events yet.</strong>
+        <div class="small text-muted">Head to the <a asp-action="Index">events list</a> and pick one.</div>
+    </div>
+}
+else
+{
+    <section class="mb-4">
+        <h2 class="h6 text-muted text-uppercase small mb-2">Upcoming</h2>
+        @if (Model.UpcomingEvents.Count == 0)
+        {
+            <p class="text-muted small">Nothing upcoming.</p>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+                @foreach (var ev in Model.UpcomingEvents)
+                {
+                    @await Html.PartialAsync("_MyEventCard", ev)
+                }
+            </div>
+        }
+    </section>
+
+    <section>
+        <h2 class="h6 text-muted text-uppercase small mb-2">Past</h2>
+        @if (Model.PastEvents.Count == 0)
+        {
+            <p class="text-muted small">No past events.</p>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+                @foreach (var ev in Model.PastEvents)
+                {
+                    @await Html.PartialAsync("_MyEventCard", ev)
+                }
+            </div>
+        }
+    </section>
+}

@@ -1,36 +1,54 @@
-﻿using MovieApp.Core.Models;
-using MovieApp.Core.Repositories;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using MovieApp.Core.Models;
+using MovieApp.Core.Repositories;
 
 namespace MovieApp.Proxy;
+
 public class RemoteEventRepository : IEventRepository
 {
     private readonly ApiClient apiClient;
+
     public RemoteEventRepository(ApiClient apiClient) => this.apiClient = apiClient;
 
-    public async Task<IEnumerable<Event>> GetAllAsync(CancellationToken ct = default) =>
-        await this.apiClient.GetAsync<List<Event>>("api/events", ct) ?? new List<Event>();
-
-    public async Task<Event?> FindByIdAsync(int eventId, CancellationToken ct = default) =>
-        await this.apiClient.GetAsync<Event>($"api/events/{eventId}", ct);
-
-    public async Task<IEnumerable<Event>> GetAllByTypeAsync(string eventType, CancellationToken ct = default) =>
-        (await GetAllAsync(ct)).Where(e => e.EventType == eventType);
-
-    // Write operations (if needed by UI)
-    public Task<int> AddAsync(Event eventDetails, CancellationToken ct = default) => this.apiClient.PostAsync<Event, int>("api/events", eventDetails, ct);
-    public Task<bool> UpdateAsync(Event eventDetails, CancellationToken ct = default) => throw new NotImplementedException(); // Replaced by UpdateEventAsync below
-    public async Task<bool> UpdateEnrollmentAsync(int eventId, int newEnrollmentCount, CancellationToken ct = default) =>
-        await this.apiClient.PostAsync<object, bool>($"api/events/{eventId}/enrollment?count={newEnrollmentCount}", new { }, ct);
-    public Task UpdateEventAsync(Event updatedEvent, CancellationToken ct = default) =>
-        this.apiClient.PostAsync<Event>("api/events/update", updatedEvent, ct);
-    public async Task<bool> DeleteAsync(int eventId, CancellationToken ct = default)
+    public async Task<IEnumerable<Event>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        await this.apiClient.DeleteAsync($"api/events/{eventId}", ct);
+        var result = await this.apiClient.GetAsync<IEnumerable<Event>>("api/events", cancellationToken);
+        return result ?? new List<Event>();
+    }
+
+    public async Task<IEnumerable<Event>> GetAllByTypeAsync(string eventType, CancellationToken cancellationToken = default)
+    {
+        var all = await this.GetAllAsync(cancellationToken);
+        return all.Where(e => string.Equals(e.EventType, eventType, System.StringComparison.OrdinalIgnoreCase));
+    }
+
+    public Task<Event?> FindByIdAsync(int eventId, CancellationToken cancellationToken = default) =>
+        this.apiClient.GetAsync<Event>($"api/events/{eventId}", cancellationToken);
+
+    public async Task<int> AddAsync(Event eventDetails, CancellationToken cancellationToken = default) =>
+        await this.apiClient.PostAsync<Event, int>("api/events", eventDetails, cancellationToken);
+
+    public async Task<bool> UpdateAsync(Event eventDetails, CancellationToken cancellationToken = default)
+    {
+        await this.apiClient.PostAsync<Event>("api/events/update", eventDetails, cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> UpdateEnrollmentAsync(int eventId, int newEnrollmentCount, CancellationToken cancellationToken = default)
+    {
+        await this.apiClient.PostAsync<object>($"api/events/{eventId}/enrollment?count={newEnrollmentCount}", new { }, cancellationToken);
+        return true;
+    }
+
+    public Task UpdateEventAsync(Event updatedEvent, CancellationToken cancellationToken = default) =>
+        this.apiClient.PostAsync<Event>("api/events/update", updatedEvent, cancellationToken);
+
+    public async Task<bool> DeleteAsync(int eventId, CancellationToken cancellationToken = default)
+    {
+        await this.apiClient.DeleteAsync($"api/events/{eventId}", cancellationToken);
         return true;
     }
 }

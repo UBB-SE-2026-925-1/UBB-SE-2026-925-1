@@ -38,12 +38,19 @@ builder.Services.AddScoped<IBookingRepository, RemoteBookingRepository>();
 builder.Services.AddScoped<ISlotMachineService, RemoteSlotMachineService>();
 builder.Services.AddScoped<ITriviaRepository, RemoteTriviaRepository>();
 builder.Services.AddScoped<ITriviaRewardRepository, RemoteTriviaRewardRepository>();
+builder.Services.AddScoped<INotificationService, RemoteNotificationService>();
+builder.Services.AddScoped<IRewardService, RemoteRewardService>();
+builder.Services.AddScoped<IEventRepository, RemoteEventRepository>();
+builder.Services.AddScoped<IUserEventAttendanceRepository, RemoteUserEventAttendanceRepository>();
 builder.Services.AddScoped<IBattleService, RemoteBattleService>();
 builder.Services.AddScoped<IPointService, RemotePointService>();
 builder.Services.AddScoped<IBadgeService, RemoteBadgeService>();
 builder.Services.AddScoped<IMarathonService, RemoteMarathonService>();
 builder.Services.AddScoped<IFavoriteEventService, RemoteFavoriteEventService>();
 
+builder.Services.AddScoped<IAmbassadorRepository, RemoteAmbassadorRepository>();
+builder.Services.AddScoped<IReferralCodeGenerator, ReferralCodeGenerator>();
+builder.Services.AddScoped<IReferralLogService, ReferralLogService>();
 // ExternalReviewService is registered with no providers for now.
 // ASP.NET Core DI resolves IEnumerable<IExternalReviewProvider> as empty when
 // no providers are registered — GetExternalReviewsAsync returns [] gracefully.

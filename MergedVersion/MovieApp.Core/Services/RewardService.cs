@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MovieApp.Core.Models;
 using MovieApp.Core.Repositories;
+using System.Collections.Generic;
 
 /// <summary>
 /// Enforces reward redemption integrity rules.
@@ -33,6 +34,14 @@ public sealed class RewardService : IRewardService
     /// <param name="eventIdentifier">The optional identifier of the event scope.</param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>True if the reward was successfully marked as redeemed; otherwise, false.</returns>
+    /// 
+    public async Task<IReadOnlyList<Reward>> GetRewardsForUserAsync(
+    int userIdentifier,
+    CancellationToken cancellationToken = default)
+    {
+        return await this.rewardRepository.GetDiscountsForUserAsync(userIdentifier, cancellationToken);
+    }
+
     public async Task<bool> RedeemAsync(Reward reward, int? eventIdentifier, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(reward);

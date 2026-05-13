@@ -1,0 +1,77 @@
+﻿@model IEnumerable<MovieApp.Core.Models.Notification>
+@using MovieApp.Core.Models
+
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<h2 class="mb-4">Notifications</h2>
+
+<form asp-action="MarkAllRead" method="post" class="mb-3">
+    @Html.AntiForgeryToken()
+
+    <button type="submit" class="btn btn-primary">
+        Mark all as read
+    </button>
+</form>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        No notifications found.
+    </div>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var notification in Model)
+        {
+            var unread = notification.State == NotificationState.Unread;
+
+            <div class="list-group-item mb-2 @(unread ? "border border-primary" : "")">
+
+                <div class="d-flex justify-content-between align-items-start">
+
+                    <div>
+                        <div class="@(unread ? "fw-bold" : "")">
+                            @notification.Message
+                        </div>
+
+                        <small class="text-muted">
+                            @notification.CreatedAt.ToLocalTime()
+                        </small>
+                    </div>
+
+                    <div class="d-flex gap-2">
+
+                        @if (unread)
+                        {
+                            <form asp-action="MarkRead" method="post">
+                                @Html.AntiForgeryToken()
+
+                                <input type="hidden" name="id" value="@notification.Id" />
+
+                                <button type="submit" class="btn btn-sm btn-success">
+                                    Mark read
+                                </button>
+                            </form>
+                        }
+
+                        <form asp-action="Delete" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden" name="id" value="@notification.Id" />
+
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                Delete
+                            </button>
+                        </form>
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+    </div>
+}

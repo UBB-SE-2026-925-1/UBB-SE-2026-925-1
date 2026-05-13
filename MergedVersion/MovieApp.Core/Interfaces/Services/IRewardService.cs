@@ -4,6 +4,7 @@
 
 namespace MovieApp.Core.Services;
 
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MovieApp.Core.Models;
@@ -13,6 +14,9 @@ using MovieApp.Core.Models;
 /// </summary>
 public interface IRewardService
 {
+    Task<IReadOnlyList<Reward>> GetRewardsForUserAsync(
+        int userIdentifier,
+        CancellationToken cancellationToken = default);
     /// <summary>
     /// Attempts to redeem a reward, optionally scoped to a specific event.
     /// </summary>
