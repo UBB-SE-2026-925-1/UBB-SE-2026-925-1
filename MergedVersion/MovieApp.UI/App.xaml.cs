@@ -1,18 +1,19 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
-using Microsoft.UI.Xaml;
-using MovieApp.Core.Services;
-using MovieApp.UI.ViewModels;
-using MovieApp.Core.Repositories;
-using MovieApp.Core.Interfaces.Service;
-using MovieApp.UI.Services;
-using MovieApp.UI.ViewModels.Events;
-using System.Net.Http;
-using MovieApp.Proxy;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
+using MovieApp.Core.Interfaces.Service;
+using MovieApp.Core.Repositories;
+using MovieApp.Core.Services;
 using MovieApp.Infrastructure;
 using MovieApp.Infrastructure.Data;
 using MovieApp.Infrastructure.Repositories;
+using MovieApp.Proxy;
+using MovieApp.UI.Services;
+using MovieApp.UI.ViewModels;
+using MovieApp.UI.ViewModels.Events;
+using System.Net.Http;
+using System.Net.Http.Json;
 
 namespace MovieApp.UI;
 
@@ -166,7 +167,43 @@ public partial class App : Application
             // Non-fatal: continue startup so the window still opens.
         }
 
-        // ── 2. Current user + slot machine streak (non-fatal) ──
+        // ── 2. Auto-login: acquire JWT and inject into the singleton ApiClient ────
+        // The UI app has no middleware pipeline, so we do this once here before
+        // anything touches the API. Every remote service shares the same singleton
+        // ApiClient, so one SetBearerToken call covers the whole app.
+        try
+        {
+            System.Diagnostics.Debug.WriteLine(">>> Auto-login: acquiring JWT...");
+            var baseUrl = Configuration["WebApi:BaseUrl"] ?? "http://localhost:5207";
+            var username = Configuration["Authentication:BootstrapUser:Username"] ?? "Admin";
+            var password = Configuration["Authentication:BootstrapUser:Password"] ?? "Admin123!";
+
+            using var http = new HttpClient();
+            var loginResponse = await http.PostAsJsonAsync(
+                $"{baseUrl}/api/auth/login",
+                new { Username = username, Password = password });
+
+            if (loginResponse.IsSuccessStatusCode)
+            {
+                var result = await loginResponse.Content.ReadFromJsonAsync<LoginResult>();
+                if (result?.Token is not null)
+                {
+                    var apiClient = ServiceProvider.GetRequiredService<ApiClient>();
+                    apiClient.SetBearerToken(result.Token);
+                    System.Diagnostics.Debug.WriteLine(">>> JWT injected into ApiClient.");
+                }
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($">>> Auto-login failed: {loginResponse.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($">>> Auto-login WARNING: {ex.Message}");
+        }
+
+        // ── 3. Current user + slot machine streak (non-fatal) ──
         try
         {
             System.Diagnostics.Debug.WriteLine(">>> Initializing CurrentUser via API...");
@@ -188,7 +225,7 @@ public partial class App : Application
             // will surface individual errors rather than blocking the window.
         }
 
-        // ── 3. Open the window unconditionally ──
+        // ── 4. Open the window unconditionally ──
         try
         {
             System.Diagnostics.Debug.WriteLine(">>> Launching MainWindow...");
@@ -202,4 +239,5 @@ public partial class App : Application
             if (System.Diagnostics.Debugger.IsAttached) System.Diagnostics.Debugger.Break();
         }
     }
+    private record LoginResult(string Token);
 }
