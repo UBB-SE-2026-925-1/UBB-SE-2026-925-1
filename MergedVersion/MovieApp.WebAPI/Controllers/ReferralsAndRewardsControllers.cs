@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using MovieApp.Core.Models;
-using MovieApp.Core.Services;
 using MovieApp.Core.Repositories;
+using MovieApp.Core.Services;
+using System.Security.Claims;
 
 namespace MovieApp.WebAPI.Controllers;
 
@@ -23,10 +24,15 @@ public class ReferralsController : ControllerBase
         this.ambassadorRepository = ambassadorRepository;
     }
 
+    // BUG FIX: was IsValidReferralAsync(code, 0) — hardcoding 0 as the current user
+    // ID meant a user could always validate their own code successfully. Now we resolve
+    // the caller's user ID from the auth claims, falling back to 0 (anonymous) only
+    // when the endpoint is accessed without authentication.
     [HttpGet("validate")]
     public async Task<ActionResult<bool>> ValidateCode([FromQuery] string code)
     {
-        var isValid = await this.referralValidator.IsValidReferralAsync(code, 0);
+        int currentUserId = this.GetCurrentUserId();
+        bool isValid = await this.referralValidator.IsValidReferralAsync(code, currentUserId);
         return Ok(isValid);
     }
 
@@ -96,6 +102,14 @@ public class ReferralsController : ControllerBase
     public class CreateProfileRequest { public int UserId { get; set; } public string Code { get; set; } = string.Empty; }
     public class AddLogRequest { public int AmbassadorId { get; set; } public int FriendId { get; set; } public int EventId { get; set; } }
     public class ApplyRewardRequest { public int AmbassadorId { get; set; } }
+
+    // Resolves the authenticated user's ID from JWT/cookie claims.
+    // Returns 0 when no authenticated identity is present (anonymous callers).
+    private int GetCurrentUserId()
+    {
+        string? idClaim = this.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(idClaim, out int id) ? id : 0;
+    }
 }
 
 [ApiController]

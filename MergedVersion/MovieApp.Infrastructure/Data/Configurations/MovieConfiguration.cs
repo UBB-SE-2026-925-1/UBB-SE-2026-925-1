@@ -22,6 +22,13 @@ public sealed class MovieConfiguration : IEntityTypeConfiguration<Movie>
         builder.Property(m => m.PosterUrl)
             .HasMaxLength(500);
 
+        // Shadow property: legacy column left over from an earlier model revision.
+        // Kept here so EF Core knows about it and applies the DB-generated default (0)
+        // rather than attempting to INSERT NULL, which violates the NOT NULL constraint.
+        builder.Property<double>("Rating")
+            .HasDefaultValue(0.0)
+            .ValueGeneratedOnAdd();
+
         // 4. One-to-Many Relationships
         // Ensuring that when a movie is deleted, its reviews and comments are handled
 
@@ -56,28 +63,28 @@ public sealed class MovieConfiguration : IEntityTypeConfiguration<Movie>
             .UsingEntity(
                 "MovieGenres",
                 l => l.HasOne(typeof(Genre)).WithMany().HasForeignKey("GenresId"),
-                r => r.HasOne(typeof(Movie)).WithMany().HasForeignKey("MoviesId"),
+                r => r.HasOne(typeof(Movie)).WithMany().HasForeignKey("MovieId"),
                 j =>
                 {
-                    j.HasKey("MoviesId", "GenresId");
+                    j.HasKey("GenresId", "MovieId");
                     j.HasData(
-                        new { MoviesId = 1, GenresId = 3 }, // Shawshank - Drama
-                        new { MoviesId = 2, GenresId = 1 }, // Dark Knight - Action
-                        new { MoviesId = 2, GenresId = 7 }, // Dark Knight - Thriller
-                        new { MoviesId = 3, GenresId = 6 }, // Inception - SciFi
-                        new { MoviesId = 4, GenresId = 7 }, // Pulp Fiction - Thriller
-                        new { MoviesId = 5, GenresId = 1 }, // Avatar - Action
-                        new { MoviesId = 5, GenresId = 6 }, // Avatar - SciFi
-                        new { MoviesId = 6, GenresId = 6 }, // Interstellar - SciFi
-                        new { MoviesId = 7, GenresId = 1 }, // Mission Impossible - Action
-                        new { MoviesId = 8, GenresId = 1 }, // Avengers - Action
-                        new { MoviesId = 9, GenresId = 3 }, // Wolf of WS - Drama
-                        new { MoviesId = 10, GenresId = 6 }, // Blade Runner - SciFi
-                        new { MoviesId = 11, GenresId = 3 }, // Forrest Gump - Drama
-                        new { MoviesId = 12, GenresId = 1 }, // Gladiator - Action
-                        new { MoviesId = 12, GenresId = 3 }, // Gladiator - Drama
-                        new { MoviesId = 13, GenresId = 6 }, // Matrix - SciFi
-                        new { MoviesId = 14, GenresId = 3 }  // Dunkirk - Drama
+                        new { MovieId = 1, GenresId = 3 }, // Shawshank - Drama
+                        new { MovieId = 2, GenresId = 1 }, // Dark Knight - Action
+                        new { MovieId = 2, GenresId = 7 }, // Dark Knight - Thriller
+                        new { MovieId = 3, GenresId = 6 }, // Inception - SciFi
+                        new { MovieId = 4, GenresId = 7 }, // Pulp Fiction - Thriller
+                        new { MovieId = 5, GenresId = 1 }, // Avatar - Action
+                        new { MovieId = 5, GenresId = 6 }, // Avatar - SciFi
+                        new { MovieId = 6, GenresId = 6 }, // Interstellar - SciFi
+                        new { MovieId = 7, GenresId = 1 }, // Mission Impossible - Action
+                        new { MovieId = 8, GenresId = 1 }, // Avengers - Action
+                        new { MovieId = 9, GenresId = 3 }, // Wolf of WS - Drama
+                        new { MovieId = 10, GenresId = 6 }, // Blade Runner - SciFi
+                        new { MovieId = 11, GenresId = 3 }, // Forrest Gump - Drama
+                        new { MovieId = 12, GenresId = 1 }, // Gladiator - Action
+                        new { MovieId = 12, GenresId = 3 }, // Gladiator - Drama
+                        new { MovieId = 13, GenresId = 6 }, // Matrix - SciFi
+                        new { MovieId = 14, GenresId = 3 }  // Dunkirk - Drama
                     );
                 });
 
@@ -92,16 +99,16 @@ public sealed class MovieConfiguration : IEntityTypeConfiguration<Movie>
             .UsingEntity(
                 "MovieActors",
                 l => l.HasOne(typeof(Actor)).WithMany().HasForeignKey("ActorsId"),
-                r => r.HasOne(typeof(Movie)).WithMany().HasForeignKey("MoviesId"),
+                r => r.HasOne(typeof(Movie)).WithMany().HasForeignKey("MovieId"),
                 j =>
                 {
-                    j.HasKey("MoviesId", "ActorsId");
+                    j.HasKey("ActorsId", "MovieId");
                     j.HasData(
-                        new { MoviesId = 3, ActorsId = 3 }, // Inception - DiCaprio
-                        new { MoviesId = 6, ActorsId = 3 }, // Interstellar - DiCaprio
-                        new { MoviesId = 7, ActorsId = 1 }, // MI - Cruise
-                        new { MoviesId = 8, ActorsId = 2 }, // Avengers - Scarlett
-                        new { MoviesId = 11, ActorsId = 4 } // Forrest Gump - Emma Watson (Mock data link)
+                        new { MovieId = 3, ActorsId = 3 }, // Inception - DiCaprio
+                        new { MovieId = 6, ActorsId = 3 }, // Interstellar - DiCaprio
+                        new { MovieId = 7, ActorsId = 1 }, // MI - Cruise
+                        new { MovieId = 8, ActorsId = 2 }, // Avengers - Scarlett
+                        new { MovieId = 11, ActorsId = 4 } // Forrest Gump - Emma Watson (Mock data link)
                     );
                 });
 
@@ -110,17 +117,17 @@ public sealed class MovieConfiguration : IEntityTypeConfiguration<Movie>
             .UsingEntity(
                 "MovieDirectors",
                 l => l.HasOne(typeof(Director)).WithMany().HasForeignKey("DirectorsId"),
-                r => r.HasOne(typeof(Movie)).WithMany().HasForeignKey("MoviesId"),
+                r => r.HasOne(typeof(Movie)).WithMany().HasForeignKey("MovieId"),
                 j =>
                 {
-                    j.HasKey("MoviesId", "DirectorsId");
+                    j.HasKey("DirectorsId", "MovieId");
                     j.HasData(
-                        new { MoviesId = 2, DirectorsId = 2 }, // Dark Knight - Nolan
-                        new { MoviesId = 3, DirectorsId = 2 }, // Inception - Nolan
-                        new { MoviesId = 6, DirectorsId = 2 }, // Interstellar - Nolan
-                        new { MoviesId = 14, DirectorsId = 2 }, // Dunkirk - Nolan
-                        new { MoviesId = 9, DirectorsId = 3 },  // Wolf of WS - Scorsese
-                        new { MoviesId = 4, DirectorsId = 4 }   // Pulp Fiction - Tarantino
+                        new { MovieId = 2, DirectorsId = 2 }, // Dark Knight - Nolan
+                        new { MovieId = 3, DirectorsId = 2 }, // Inception - Nolan
+                        new { MovieId = 6, DirectorsId = 2 }, // Interstellar - Nolan
+                        new { MovieId = 14, DirectorsId = 2 }, // Dunkirk - Nolan
+                        new { MovieId = 9, DirectorsId = 3 },  // Wolf of WS - Scorsese
+                        new { MovieId = 4, DirectorsId = 4 }   // Pulp Fiction - Tarantino
                     );
                 });
     }

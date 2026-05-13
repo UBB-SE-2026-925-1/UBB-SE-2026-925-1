@@ -9,10 +9,12 @@ namespace MovieApp.WebAPI.Controllers;
 public class MarathonsController : ControllerBase
 {
     private readonly IMarathonService marathonService;
+    private readonly ICurrentUserService currentUserService;
 
-    public MarathonsController(IMarathonService marathonService)
+    public MarathonsController(IMarathonService marathonService, ICurrentUserService currentUserService)
     {
         this.marathonService = marathonService;
+        this.currentUserService = currentUserService;
     }
 
     [HttpGet("weekly/{userId}")]
@@ -40,6 +42,7 @@ public class MarathonsController : ControllerBase
     [HttpPost("{id}/start")]
     public async Task<ActionResult<bool>> StartMarathon(int id)
     {
+        await this.currentUserService.InitializeAsync();
         var success = await this.marathonService.StartMarathonAsync(id);
         return Ok(success);
     }
@@ -61,6 +64,7 @@ public class MarathonsController : ControllerBase
     [HttpPost("{id}/quiz")]
     public async Task<ActionResult> UpdateQuizResult(int id, [FromBody] int correctAnswersCount)
     {
+        await this.currentUserService.InitializeAsync();
         await this.marathonService.UpdateQuizResultAsync(id, correctAnswersCount);
         return Ok();
     }
@@ -68,6 +72,7 @@ public class MarathonsController : ControllerBase
     [HttpPost("{id}/movies/{movieId}/log")]
     public async Task<ActionResult<bool>> LogMovie(int id, int movieId, [FromBody] int correctAnswersCount)
     {
+        await this.currentUserService.InitializeAsync();
         var success = await this.marathonService.LogMovieAsync(id, movieId, correctAnswersCount);
         return Ok(success);
     }

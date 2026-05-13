@@ -1,0 +1,176 @@
+@model MovieApp.Web.Models.MarathonDetailViewModel
+@{
+    ViewData["Title"] = Model.Marathon.Title;
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="@Url.Action("Index", "Marathon")">Marathons</a></li>
+        <li class="breadcrumb-item active">@Model.Marathon.Title</li>
+    </ol>
+</nav>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info">@Model.StatusMessage</div>
+}
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="row g-0">
+        @if (!string.IsNullOrWhiteSpace(Model.Marathon.PosterUrl))
+        {
+            <div class="col-md-4">
+                <img src="@Model.Marathon.PosterUrl" alt="@Model.Marathon.Title poster"
+                     class="img-fluid rounded-start h-100" style="object-fit: cover;"
+                     onerror="this.onerror=null;this.parentElement.style.display='none';" />
+            </div>
+        }
+        <div class="@(string.IsNullOrWhiteSpace(Model.Marathon.PosterUrl) ? "col-12" : "col-md-8")">
+            <div class="card-body">
+                <h1 class="h2 fw-bold mb-2">@Model.Marathon.Title</h1>
+                <div class="mb-2">
+                    @if (!string.IsNullOrWhiteSpace(Model.Marathon.Theme))
+                    {
+                        <span class="badge bg-secondary me-1">@Model.Marathon.Theme</span>
+                    }
+                    @if (Model.Marathon.IsElite)
+                    {
+                        <span class="badge bg-warning text-dark me-1">Elite</span>
+                    }
+                    @if (Model.IsLocked)
+                    {
+                        <span class="badge bg-danger me-1">Locked — prerequisite required</span>
+                    }
+                    @if (Model.IsJoined)
+                    {
+                        <span class="badge bg-success me-1">Joined</span>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Marathon.Description))
+                {
+                    <p class="text-muted">@Model.Marathon.Description</p>
+                }
+
+                <div class="d-flex justify-content-between small text-muted mb-1">
+                    <span>Your progress</span>
+                    <span>@Model.CompletedMovies / @Model.TotalMovies movies verified</span>
+                </div>
+                <div class="progress mb-3" role="progressbar"
+                     aria-valuenow="@Model.ProgressPercent" aria-valuemin="0" aria-valuemax="100"
+                     style="height: 14px;">
+                    <div class="progress-bar @(Model.IsJoined ? "bg-success" : "bg-secondary")"
+                         style="width: @Model.ProgressPercent%">
+                        @Model.ProgressPercent%
+                    </div>
+                </div>
+
+                @if (!Model.IsJoined && !Model.IsLocked)
+                {
+                    <form asp-action="Start" asp-route-id="@Model.Marathon.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-primary">Join Marathon</button>
+                    </form>
+                }
+                else if (Model.IsLocked)
+                {
+                    <button class="btn btn-secondary" disabled>Locked</button>
+                }
+                else if (Model.Progress?.IsCompleted == true)
+                {
+                    <span class="badge bg-success fs-6">Marathon completed!</span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0">
+                <h2 class="h5 mb-0 fw-bold">Movies</h2>
+            </div>
+            <div class="card-body">
+                @if (Model.Movies.Count == 0)
+                {
+                    <p class="text-muted mb-0">No movies in this marathon.</p>
+                }
+                else
+                {
+                    <ol class="list-group list-group-numbered">
+                        @for (int i = 0; i < Model.Movies.Count; i++)
+                        {
+                            var movie = Model.Movies[i];
+                            var verified = i < Model.CompletedMovies;
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="@Url.Action("Detail", "Movie", new { id = movie.Id })"
+                                       class="text-decoration-none fw-semibold">
+                                        @movie.Title
+                                    </a>
+                                    @if (movie.ReleaseYear > 0)
+                                    {
+                                        <span class="text-muted small ms-2">@movie.ReleaseYear</span>
+                                    }
+                                </div>
+                                @if (verified)
+                                {
+                                    <span class="badge bg-success rounded-pill">Verified</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-muted rounded-pill">Pending</span>
+                                }
+                            </li>
+                        }
+                    </ol>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0 fw-bold">Leaderboard</h2>
+                <a href="@Url.Action("Leaderboard", "Marathon", new { id = Model.Marathon.Id })"
+                   class="btn btn-sm btn-outline-secondary">Full board</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.Leaderboard.Count == 0)
+                {
+                    <p class="text-muted m-3 mb-0">No participants yet.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>User</th>
+                                    <th class="text-end">Movies</th>
+                                    <th class="text-end">Accuracy</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ int rank = 1; }
+                                @foreach (var entry in Model.Leaderboard.Take(10))
+                                {
+                                    <tr class="@(entry.UserId == Model.CurrentUserId ? "table-primary" : "")">
+                                        <td>@rank</td>
+                                        <td>@entry.Username</td>
+                                        <td class="text-end">@entry.CompletedMoviesCount</td>
+                                        <td class="text-end">@entry.TriviaAccuracy.ToString("F1")%</td>
+                                    </tr>
+                                    rank++;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
